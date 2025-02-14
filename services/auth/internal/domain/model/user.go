@@ -16,9 +16,3 @@ type User struct {
 	RoleID         uuid.UUID `gorm:"type:uuid;column:role_id;not null"`
 	Role           Role      `gorm:"foreignKey:RoleID;references:ID"`
 }
-
-type Role struct {
-	gorm.Model
-	ID   uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`
-	Name string    `gorm:"type:varchar(255);column:name;not null"`
-}

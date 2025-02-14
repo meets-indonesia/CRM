@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	model "github.com/kevinnaserwan/crm-be/services/auth/internal/domain/entity"
+	model "github.com/kevinnaserwan/crm-be/services/auth/internal/domain/model"
 	"gorm.io/gorm"
 )
 

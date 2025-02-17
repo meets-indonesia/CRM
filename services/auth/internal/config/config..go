@@ -1,4 +1,3 @@
-// services/auth/internal/config/config.go
 package config
 
 import (
@@ -16,6 +15,10 @@ type Config struct {
 	JWTSecret     string `mapstructure:"JWT_SECRET"`
 	JWTExpiration time.Duration
 	ServerPort    string `mapstructure:"SERVER_PORT"`
+	SMTPHost      string `mapstructure:"SMTP_HOST"`
+	SMTPPort      int    `mapstructure:"SMTP_PORT"`
+	SMTPUsername  string `mapstructure:"SMTP_USERNAME"`
+	SMTPPassword  string `mapstructure:"SMTP_PASSWORD"`
 }
 
 func LoadConfig() (Config, error) {
@@ -28,6 +31,10 @@ func LoadConfig() (Config, error) {
 	viper.SetDefault("DB_NAME", "auth_db")
 	viper.SetDefault("JWT_SECRET", "your-secret-key")
 	viper.SetDefault("SERVER_PORT", "8080")
+	viper.SetDefault("SMTP_HOST", "smtp.gmail.com")
+	viper.SetDefault("SMTP_PORT", 587)
+	viper.SetDefault("SMTP_USERNAME", "your-email@gmail.com")
+	viper.SetDefault("SMTP_PASSWORD", "your-app-password")
 
 	viper.AutomaticEnv()
 
@@ -39,6 +46,10 @@ func LoadConfig() (Config, error) {
 	config.JWTSecret = viper.GetString("JWT_SECRET")
 	config.JWTExpiration = 24 * time.Hour
 	config.ServerPort = viper.GetString("SERVER_PORT")
+	config.SMTPHost = viper.GetString("SMTP_HOST")
+	config.SMTPPort = viper.GetInt("SMTP_PORT")
+	config.SMTPUsername = viper.GetString("SMTP_USERNAME")
+	config.SMTPPassword = viper.GetString("SMTP_PASSWORD")
 
 	return config, nil
 }

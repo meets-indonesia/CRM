@@ -10,6 +10,7 @@ import (
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/config"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/delivery/http"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/domain/model"
+	"github.com/kevinnaserwan/crm-be/services/auth/internal/infrastructure/messagebroker"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/middleware"
 	repopostgre "github.com/kevinnaserwan/crm-be/services/auth/internal/repository/postgres"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/usecase"
@@ -33,6 +34,13 @@ func main() {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
+	// Initialize RabbitMQ
+	rabbitMQ, err := messagebroker.NewRabbitMQ(cfg.RabbitMQURL)
+	if err != nil {
+		log.Fatal("Failed to connect to RabbitMQ:", err)
+	}
+	defer rabbitMQ.Close()
+
 	// Auto Migrate
 	err = db.AutoMigrate(&model.Role{}, &model.User{}, &model.OTP{})
 	if err != nil {
@@ -52,15 +60,14 @@ func main() {
 		cfg.SMTPPassword,
 	)
 
-	// Initialize Use Cases
-	authUseCase := usecase.NewAuthUseCase(userRepo, cfg.JWTSecret, cfg.JWTExpiration)
+	// Initialize Use Cases with RabbitMQ
+	authUseCase := usecase.NewAuthUseCase(userRepo, cfg.JWTSecret, cfg.JWTExpiration, rabbitMQ)
 	roleUseCase := usecase.NewRoleUseCase(roleRepo)
-	forgotPasswordUseCase := usecase.NewForgotPasswordUseCase(userRepo, otpRepo, emailService)
+	forgotPasswordUseCase := usecase.NewForgotPasswordUseCase(userRepo, otpRepo, emailService, rabbitMQ)
 
 	// Initialize Handlers
-	authHandler := http.NewAuthHandler(authUseCase)
+	authHandler := http.NewAuthHandler(authUseCase, forgotPasswordUseCase)
 	roleHandler := http.NewRoleHandler(roleUseCase)
-	forgotPasswordHandler := http.NewForgotPasswordHandler(forgotPasswordUseCase)
 
 	// Setup Router
 	router := gin.Default()
@@ -75,15 +82,11 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// Public routes
-	router.POST("/auth/register", authHandler.Register)
-	router.POST("/auth/login", authHandler.Login)
-	router.POST("/roles", roleHandler.CreateRole)
+	// Single endpoint for all auth operations
+	router.POST("/auth", authHandler.Handle)
 
-	// Forgot password routes
-	router.POST("/auth/forgot-password", forgotPasswordHandler.RequestPasswordReset)
-	router.POST("/auth/verify-otp", forgotPasswordHandler.VerifyOTP)
-	router.POST("/auth/reset-password", forgotPasswordHandler.ResetPassword)
+	// Role endpoint remains separate
+	router.POST("/roles", roleHandler.CreateRole)
 
 	// Protected routes
 	protected := router.Group("/api")

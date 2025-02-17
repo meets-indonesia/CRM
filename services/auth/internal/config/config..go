@@ -1,3 +1,4 @@
+// services/auth/internal/config/config.go
 package config
 
 import (
@@ -19,6 +20,7 @@ type Config struct {
 	SMTPPort      int    `mapstructure:"SMTP_PORT"`
 	SMTPUsername  string `mapstructure:"SMTP_USERNAME"`
 	SMTPPassword  string `mapstructure:"SMTP_PASSWORD"`
+	RabbitMQURL   string `mapstructure:"RABBITMQ_URL"`
 }
 
 func LoadConfig() (Config, error) {
@@ -35,6 +37,7 @@ func LoadConfig() (Config, error) {
 	viper.SetDefault("SMTP_PORT", 587)
 	viper.SetDefault("SMTP_USERNAME", "your-email@gmail.com")
 	viper.SetDefault("SMTP_PASSWORD", "your-app-password")
+	viper.SetDefault("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
 
 	viper.AutomaticEnv()
 
@@ -50,6 +53,7 @@ func LoadConfig() (Config, error) {
 	config.SMTPPort = viper.GetInt("SMTP_PORT")
 	config.SMTPUsername = viper.GetString("SMTP_USERNAME")
 	config.SMTPPassword = viper.GetString("SMTP_PASSWORD")
+	config.RabbitMQURL = viper.GetString("RABBITMQ_URL")
 
 	return config, nil
 }

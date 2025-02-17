@@ -4,27 +4,37 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/kevinnaserwan/crm-be/services/auth/internal/domain/events"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/domain/model"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/domain/repository"
+	"github.com/kevinnaserwan/crm-be/services/auth/internal/infrastructure/messagebroker"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/util"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthUseCase struct {
-	userRepo    repository.UserRepository
-	jwtSecret   string
-	jwtDuration time.Duration
+	userRepo      repository.UserRepository
+	jwtSecret     string
+	jwtDuration   time.Duration
+	messageBroker *messagebroker.RabbitMQ
 }
 
-func NewAuthUseCase(userRepo repository.UserRepository, jwtSecret string, jwtDuration time.Duration) *AuthUseCase {
+func NewAuthUseCase(
+	userRepo repository.UserRepository,
+	jwtSecret string,
+	jwtDuration time.Duration,
+	messageBroker *messagebroker.RabbitMQ,
+) *AuthUseCase {
 	return &AuthUseCase{
-		userRepo:    userRepo,
-		jwtSecret:   jwtSecret,
-		jwtDuration: jwtDuration,
+		userRepo:      userRepo,
+		jwtSecret:     jwtSecret,
+		jwtDuration:   jwtDuration,
+		messageBroker: messageBroker,
 	}
 }
 
@@ -46,7 +56,26 @@ func (uc *AuthUseCase) Register(ctx context.Context, user *model.User) error {
 		user.ID = uuid.New()
 	}
 
-	return uc.userRepo.Create(ctx, user)
+	// Simpan user ke database
+	err = uc.userRepo.Create(ctx, user)
+	if err != nil {
+		return err
+	}
+
+	// Publish user registered event setelah user berhasil dibuat
+	event := events.UserRegisteredEvent{
+		UserID:    user.ID.String(),
+		Email:     user.Email,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+	}
+
+	err = uc.messageBroker.PublishMessage(ctx, "auth.events", "user.registered", event)
+	if err != nil {
+		log.Printf("Failed to publish user registered event: %v", err)
+	}
+
+	return nil
 }
 
 func (uc *AuthUseCase) Login(ctx context.Context, email, password string) (string, error) {

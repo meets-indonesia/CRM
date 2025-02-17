@@ -4,30 +4,36 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"log"
 	"math/rand"
 	"time"
 
+	"github.com/kevinnaserwan/crm-be/services/auth/internal/domain/events"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/domain/model"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/domain/repository"
+	"github.com/kevinnaserwan/crm-be/services/auth/internal/infrastructure/messagebroker"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/util"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type ForgotPasswordUseCase struct {
-	userRepo     repository.UserRepository
-	otpRepo      repository.OTPRepository
-	emailService *util.EmailService
+	userRepo      repository.UserRepository
+	otpRepo       repository.OTPRepository
+	emailService  *util.EmailService
+	messageBroker *messagebroker.RabbitMQ
 }
 
 func NewForgotPasswordUseCase(
 	userRepo repository.UserRepository,
 	otpRepo repository.OTPRepository,
 	emailService *util.EmailService,
+	messageBroker *messagebroker.RabbitMQ,
 ) *ForgotPasswordUseCase {
 	return &ForgotPasswordUseCase{
-		userRepo:     userRepo,
-		otpRepo:      otpRepo,
-		emailService: emailService,
+		userRepo:      userRepo,
+		otpRepo:       otpRepo,
+		emailService:  emailService,
+		messageBroker: messageBroker,
 	}
 }
 
@@ -45,13 +51,43 @@ func (uc *ForgotPasswordUseCase) RequestPasswordReset(ctx context.Context, email
 		ExpiresAt: time.Now().Add(15 * time.Minute),
 	}
 
+	// Save OTP to database
 	if err := uc.otpRepo.Create(ctx, otp); err != nil {
 		return err
 	}
 
-	// Send email with OTP
+	// Print OTP to console for debugging (this is important!)
+	log.Printf("\n============================================")
+	log.Printf("Generated OTP for %s: %s", email, otp.Code)
+	log.Printf("============================================\n")
+
+	// Publish password reset requested event
+	event := events.PasswordResetRequestedEvent{
+		UserID: user.ID.String(),
+		Email:  user.Email,
+		OTP:    otp.Code,
+	}
+
+	// Publish the password reset event
+	if err = uc.messageBroker.PublishMessage(ctx, "auth.events", "password.reset.requested", event); err != nil {
+		log.Printf("Warning: Failed to publish password reset event: %v", err)
+	}
+
+	// Create and publish email event
+	emailEvent := events.EmailEvent{
+		To:      user.Email,
+		Subject: "Password Reset OTP",
+		Body:    fmt.Sprintf("Your OTP for password reset is: %s\nThis code will expire in 15 minutes.", otp.Code),
+	}
+
+	if err = uc.messageBroker.PublishMessage(ctx, "email.events", "email.send", emailEvent); err != nil {
+		log.Printf("Warning: Failed to publish email event: %v", err)
+	}
+
+	// Try to send email directly
 	if err := uc.emailService.SendOTP(email, otp.Code); err != nil {
-		return fmt.Errorf("failed to send OTP: %w", err)
+		log.Printf("Warning: Failed to send email directly: %v", err)
+		// Don't return error to not reveal if email exists
 	}
 
 	return nil

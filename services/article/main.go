@@ -6,6 +6,8 @@ import (
 	"log"
 	"time"
 
+	httphandler "net/http" // Tambahkan ini
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/kevinnaserwan/crm-be/services/article/internal/config"
@@ -79,6 +81,24 @@ func main() {
 	{
 		protected.POST("/admin/articles", articleHandler.Handle)
 	}
+
+	// Super admin routes
+	superAdmin := router.Group("/api/super-admin")
+	superAdmin.Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	superAdmin.Use(middleware.SuperAdminMiddleware())
+	{
+		superAdmin.POST("/articles", articleHandler.Handle)
+	}
+
+	router.GET("/mobile/articles", func(c *gin.Context) {
+		articles, err := articleUseCase.ListArticlesByStatus(c.Request.Context(), model.StatusSent)
+		if err != nil {
+			c.JSON(httphandler.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(httphandler.StatusOK, gin.H{"articles": articles})
+	})
 
 	// Start server
 	log.Printf("Article service starting on port %s", cfg.ServerPort)

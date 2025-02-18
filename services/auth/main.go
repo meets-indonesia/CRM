@@ -61,7 +61,7 @@ func main() {
 	)
 
 	// Initialize Use Cases with RabbitMQ
-	authUseCase := usecase.NewAuthUseCase(userRepo, cfg.JWTSecret, cfg.JWTExpiration, rabbitMQ)
+	authUseCase := usecase.NewAuthUseCase(userRepo, roleRepo, cfg.JWTSecret, cfg.JWTExpiration, rabbitMQ)
 	roleUseCase := usecase.NewRoleUseCase(roleRepo)
 	forgotPasswordUseCase := usecase.NewForgotPasswordUseCase(userRepo, otpRepo, emailService, rabbitMQ)
 

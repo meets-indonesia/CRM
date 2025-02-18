@@ -7,6 +7,13 @@ import (
 	"gorm.io/gorm"
 )
 
+// Article status constants
+const (
+	StatusDraft  = 1
+	StatusSent   = 2
+	StatusDenied = 3
+)
+
 type Article struct {
 	gorm.Model
 	ID         uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`

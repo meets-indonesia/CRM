@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/kevinnaserwan/crm-be/services/article/internal/delivery/http/models"
 	"github.com/kevinnaserwan/crm-be/services/article/internal/domain/model"
 	"github.com/kevinnaserwan/crm-be/services/article/internal/usecase"
@@ -41,6 +42,8 @@ func (h *ArticleHandler) Handle(c *gin.Context) {
 		h.handleUpdate(c, baseRequest.Data)
 	case "delete":
 		h.handleDelete(c, baseRequest.Data)
+	case "change_status":
+		h.handleChangeStatus(c, baseRequest.Data)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid action"})
 	}
@@ -180,4 +183,42 @@ func convertData(data interface{}, target interface{}) error {
 		return err
 	}
 	return json.Unmarshal(jsonData, target)
+}
+
+func (h *ArticleHandler) handleChangeStatus(c *gin.Context, data interface{}) {
+	var changeStatusData struct {
+		ID     uuid.UUID `json:"id" binding:"required"`
+		Status int       `json:"status" binding:"required"`
+	}
+
+	if err := convertData(data, &changeStatusData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	// Get existing article
+	article, err := h.articleUseCase.GetArticle(c.Request.Context(), changeStatusData.ID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "article not found"})
+		return
+	}
+
+	// Update only the status
+	article.Status = changeStatusData.Status
+
+	if err := h.articleUseCase.UpdateArticle(c.Request.Context(), article, userID.(string)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Article status updated successfully",
+		"article": article,
+	})
 }

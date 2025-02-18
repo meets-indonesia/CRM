@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/domain/events"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/domain/model"
@@ -19,6 +20,7 @@ import (
 
 type AuthUseCase struct {
 	userRepo      repository.UserRepository
+	roleRepo      repository.RoleRepository
 	jwtSecret     string
 	jwtDuration   time.Duration
 	messageBroker *messagebroker.RabbitMQ
@@ -26,12 +28,14 @@ type AuthUseCase struct {
 
 func NewAuthUseCase(
 	userRepo repository.UserRepository,
+	roleRepo repository.RoleRepository,
 	jwtSecret string,
 	jwtDuration time.Duration,
 	messageBroker *messagebroker.RabbitMQ,
 ) *AuthUseCase {
 	return &AuthUseCase{
 		userRepo:      userRepo,
+		roleRepo:      roleRepo,
 		jwtSecret:     jwtSecret,
 		jwtDuration:   jwtDuration,
 		messageBroker: messageBroker,
@@ -78,6 +82,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, user *model.User) error {
 	return nil
 }
 
+// In auth service's usecase
 func (uc *AuthUseCase) Login(ctx context.Context, email, password string) (string, error) {
 	user, err := uc.userRepo.FindByEmail(ctx, email)
 	if err != nil {
@@ -89,10 +94,21 @@ func (uc *AuthUseCase) Login(ctx context.Context, email, password string) (strin
 		return "", errors.New("invalid credentials")
 	}
 
-	token, err := util.GenerateJWT(user.ID, uc.jwtSecret, uc.jwtDuration)
+	// Get user's role
+	role, err := uc.roleRepo.FindByID(ctx, user.RoleID)
 	if err != nil {
-		return "", err
+		return "", errors.New("role not found")
 	}
 
-	return token, nil
+	claims := util.Claims{
+		UserID: user.ID,
+		Role:   role.Name, // Include role name here
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(uc.jwtDuration).Unix(),
+			IssuedAt:  time.Now().Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(uc.jwtSecret))
 }

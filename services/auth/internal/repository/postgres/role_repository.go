@@ -28,3 +28,12 @@ func (r *roleRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.Rol
 	}
 	return &role, nil
 }
+
+func (r *roleRepository) FindByName(ctx context.Context, name string) (*model.Role, error) {
+	var role model.Role
+	err := r.db.WithContext(ctx).Where("name = ?", name).First(&role).Error
+	if err != nil {
+		return nil, err
+	}
+	return &role, nil
+}

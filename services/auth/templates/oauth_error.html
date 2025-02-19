@@ -1,0 +1,73 @@
+<!-- services/auth/templates/oauth_error.html -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Authentication Error</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 40px auto;
+        max-width: 600px;
+        padding: 20px;
+      }
+      .error-container {
+        background-color: #fff0f0;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .error-icon {
+        color: #f44336;
+        font-size: 48px;
+        margin-bottom: 20px;
+      }
+      .error-message {
+        color: #d32f2f;
+        margin-bottom: 20px;
+      }
+      .close-button {
+        margin-top: 20px;
+        padding: 10px 20px;
+        background-color: #f44336;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="error-container">
+      <div class="error-icon">✗</div>
+      <h1>Authentication Failed</h1>
+      <p class="error-message">{{ .error }}</p>
+
+      <div id="app-return">
+        <p>Please try again or contact support if the problem persists.</p>
+        <button class="close-button" id="closeButton">Return to App</button>
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("closeButton")
+        .addEventListener("click", function () {
+          // For mobile apps, you might use a custom URL scheme
+          window.location.href = "yourapp://oauth/error?message={{ .error }}";
+
+          // Fallback to close the window after a delay
+          setTimeout(function () {
+            window.close();
+          }, 1000);
+        });
+
+      // Try to auto-redirect back to the app
+      window.onload = function () {
+        // Auto-redirect attempt
+        window.location.href = "yourapp://oauth/error?message={{ .error }}";
+      };
+    </script>
+  </body>
+</html>

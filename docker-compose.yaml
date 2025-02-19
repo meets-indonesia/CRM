@@ -19,6 +19,12 @@ services:
       - SMTP_USERNAME=naufalmuzakki895@gmail.com
       - SMTP_PASSWORD=vblv goxg qhom ysrv
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - GOOGLE_CLIENT_ID=your-google-client-id
+      - GOOGLE_CLIENT_SECRET=your-google-client-secret
+      - APPLE_CLIENT_ID=your-apple-client-id
+      - APPLE_CLIENT_SECRET=your-apple-client-secret
+      - APPLE_KEY_ID=your-apple-key-id
+      - APPLE_TEAM_ID=your-apple-team-id
     depends_on:
       postgres:
         condition: service_healthy

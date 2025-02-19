@@ -13,6 +13,7 @@ import (
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/infrastructure/messagebroker"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/middleware"
 	repopostgre "github.com/kevinnaserwan/crm-be/services/auth/internal/repository/postgres"
+	"github.com/kevinnaserwan/crm-be/services/auth/internal/service"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/usecase"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/util"
 	"gorm.io/driver/postgres"
@@ -51,6 +52,7 @@ func main() {
 	userRepo := repopostgre.NewUserRepository(db)
 	roleRepo := repopostgre.NewRoleRepository(db)
 	otpRepo := repopostgre.NewOTPRepository(db)
+	oauthRepo := repopostgre.NewOAuthRepository(db) // Add this
 
 	// Initialize Email Service
 	emailService := util.NewEmailService(
@@ -60,14 +62,25 @@ func main() {
 		cfg.SMTPPassword,
 	)
 
+	oauthService := service.NewOAuthService(cfg.OAuth) // Add this
+
 	// Initialize Use Cases with RabbitMQ
 	authUseCase := usecase.NewAuthUseCase(userRepo, roleRepo, cfg.JWTSecret, cfg.JWTExpiration, rabbitMQ)
 	roleUseCase := usecase.NewRoleUseCase(roleRepo)
 	forgotPasswordUseCase := usecase.NewForgotPasswordUseCase(userRepo, otpRepo, emailService, rabbitMQ)
+	oauthUseCase := usecase.NewOAuthUseCase( // Add this
+		userRepo,
+		oauthRepo,
+		roleRepo,
+		oauthService,
+		cfg.JWTSecret,
+		cfg.JWTExpiration,
+	)
 
 	// Initialize Handlers
 	authHandler := http.NewAuthHandler(authUseCase, forgotPasswordUseCase)
 	roleHandler := http.NewRoleHandler(roleUseCase)
+	oauthHandler := http.NewOAuthHandler(oauthUseCase) // Add this
 
 	// Setup Router
 	router := gin.Default()
@@ -94,6 +107,14 @@ func main() {
 	{
 		// Add protected routes here
 	}
+
+	// Load HTML templates
+	router.LoadHTMLGlob("templates/*")
+
+	// OAuth routes for mobile
+	router.POST("/oauth", oauthHandler.Handle)                                   // For meta-based approach
+	router.GET("/oauth/google/callback", oauthHandler.GoogleCallback)            // Web flow
+	router.GET("/oauth/google/callback/mobile", oauthHandler.GoogleCallbackJSON) // Mobile-friendly JSON response
 
 	// Start server
 	log.Printf("Server starting on port %s", cfg.ServerPort)

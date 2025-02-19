@@ -7,6 +7,16 @@ import (
 	"github.com/spf13/viper"
 )
 
+type OAuthConfig struct {
+	GoogleClientID     string `mapstructure:"GOOGLE_CLIENT_ID"`
+	GoogleClientSecret string `mapstructure:"GOOGLE_CLIENT_SECRET"`
+	AppleClientID      string `mapstructure:"APPLE_CLIENT_ID"`
+	AppleClientSecret  string `mapstructure:"APPLE_CLIENT_SECRET"`
+	AppleKeyID         string `mapstructure:"APPLE_KEY_ID"`
+	AppleTeamID        string `mapstructure:"APPLE_TEAM_ID"`
+	ApplePrivateKey    string `mapstructure:"APPLE_PRIVATE_KEY"`
+}
+
 type Config struct {
 	DBHost        string `mapstructure:"DB_HOST"`
 	DBPort        string `mapstructure:"DB_PORT"`
@@ -21,6 +31,8 @@ type Config struct {
 	SMTPUsername  string `mapstructure:"SMTP_USERNAME"`
 	SMTPPassword  string `mapstructure:"SMTP_PASSWORD"`
 	RabbitMQURL   string `mapstructure:"RABBITMQ_URL"`
+	// Add OAuth configuration
+	OAuth OAuthConfig
 }
 
 func LoadConfig() (Config, error) {
@@ -38,6 +50,13 @@ func LoadConfig() (Config, error) {
 	viper.SetDefault("SMTP_USERNAME", "your-email@gmail.com")
 	viper.SetDefault("SMTP_PASSWORD", "your-app-password")
 	viper.SetDefault("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
+	viper.SetDefault("GOOGLE_CLIENT_ID", "")
+	viper.SetDefault("GOOGLE_CLIENT_SECRET", "")
+	viper.SetDefault("APPLE_CLIENT_ID", "")
+	viper.SetDefault("APPLE_CLIENT_SECRET", "")
+	viper.SetDefault("APPLE_KEY_ID", "")
+	viper.SetDefault("APPLE_TEAM_ID", "")
+	viper.SetDefault("APPLE_PRIVATE_KEY", "")
 
 	viper.AutomaticEnv()
 
@@ -54,6 +73,13 @@ func LoadConfig() (Config, error) {
 	config.SMTPUsername = viper.GetString("SMTP_USERNAME")
 	config.SMTPPassword = viper.GetString("SMTP_PASSWORD")
 	config.RabbitMQURL = viper.GetString("RABBITMQ_URL")
+	config.OAuth.GoogleClientID = viper.GetString("GOOGLE_CLIENT_ID")
+	config.OAuth.GoogleClientSecret = viper.GetString("GOOGLE_CLIENT_SECRET")
+	config.OAuth.AppleClientID = viper.GetString("APPLE_CLIENT_ID")
+	config.OAuth.AppleClientSecret = viper.GetString("APPLE_CLIENT_SECRET")
+	config.OAuth.AppleKeyID = viper.GetString("APPLE_KEY_ID")
+	config.OAuth.AppleTeamID = viper.GetString("APPLE_TEAM_ID")
+	config.OAuth.ApplePrivateKey = viper.GetString("APPLE_PRIVATE_KEY")
 
 	return config, nil
 }

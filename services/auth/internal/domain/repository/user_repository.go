@@ -13,4 +13,5 @@ type UserRepository interface {
 	FindByEmail(ctx context.Context, email string) (*model.User, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 	Update(ctx context.Context, user *model.User) error
+	FindByGoogleID(ctx context.Context, googleID string) (*model.User, error)
 }

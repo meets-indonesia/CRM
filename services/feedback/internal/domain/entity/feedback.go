@@ -41,7 +41,7 @@ type Feedback struct {
 	gorm.Model
 	ID             uuid.UUID    `gorm:"type:uuid;default:gen_random_uuid()"`
 	UserID         uuid.UUID    `gorm:"type:uuid;column:user_id;not null"`
-	LrtDate        time.Time    `gorm:"type:timestamp;column:lrt_date;not null"`
+	FeedbackDate   time.Time    `gorm:"type:timestamp;column:feedback_date;not null"`
 	FeedbackTypeID uuid.UUID    `gorm:"type:uuid;column:feedback_type_id;not null"`
 	StationID      uuid.UUID    `gorm:"type:uuid;column:station_id;not null"`
 	Feedback       string       `gorm:"type:text;column:feedback;not null"`

@@ -19,8 +19,8 @@ services:
       - SMTP_USERNAME=naufalmuzakki895@gmail.com
       - SMTP_PASSWORD=vblv goxg qhom ysrv
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
-      - GOOGLE_CLIENT_ID=your-google-client-id
-      - GOOGLE_CLIENT_SECRET=your-google-client-secret
+      - GOOGLE_CLIENT_ID=441262357381-1grqglajulm13bt6cn1cdrmit9tmdskq.apps.googleusercontent.com
+      - GOOGLE_CLIENT_SECRET=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
       - APPLE_CLIENT_ID=your-apple-client-id
       - APPLE_CLIENT_SECRET=your-apple-client-secret
       - APPLE_KEY_ID=your-apple-key-id

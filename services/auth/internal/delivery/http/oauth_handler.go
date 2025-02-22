@@ -1,8 +1,8 @@
-// services/auth/internal/delivery/http/oauth_handler.go
 package http
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -33,9 +33,45 @@ func (h *OAuthHandler) Handle(c *gin.Context) {
 		h.handleGoogleSignIn(c, baseRequest.Data)
 	case "apple_sign_in":
 		h.handleAppleSignIn(c, baseRequest.Data)
+	case "list_oauth_users": // Add this case
+		h.handleListOAuthUsers(c)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid action"})
 	}
+}
+
+func (h *OAuthHandler) handleListOAuthUsers(c *gin.Context) {
+	userRole, exists := c.Get("userRole")
+	log.Printf("Debug - User Role: %v, Exists: %v", userRole, exists)
+
+	roleStr, ok := userRole.(string)
+	if !ok || roleStr != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Admin access required",
+			"debug": gin.H{
+				"role_received":  userRole,
+				"role_exists":    exists,
+				"role_is_string": ok,
+			},
+		})
+		return
+	}
+
+	// Optional: Check if user is admin
+	if userRole, exists := c.Get("userRole"); !exists || userRole != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
+		return
+	}
+
+	oauthAccounts, err := h.oauthUseCase.ListOAuthUsers(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.(error).Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"oauth_users": oauthAccounts,
+	})
 }
 
 // Handle Google sign in

@@ -13,15 +13,15 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
-func GenerateJWT(userID uuid.UUID, secret string, duration time.Duration) (string, error) {
+func GenerateJWT(userID uuid.UUID, role string, secret string, duration time.Duration) (string, error) {
 	claims := Claims{
 		UserID: userID,
+		Role:   role, // Add this line
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(duration).Unix(),
 			IssuedAt:  time.Now().Unix(),
 		},
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
 }

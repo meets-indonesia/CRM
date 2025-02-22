@@ -20,4 +20,7 @@ type OAuthRepository interface {
 
 	// Find all OAuth accounts for a user
 	FindByUserID(ctx context.Context, userID uuid.UUID) ([]model.OAuthAccount, error)
+
+	// list all Oauth accounts
+	ListOAuthUsers(ctx context.Context) ([]model.OAuthAccount, error)
 }

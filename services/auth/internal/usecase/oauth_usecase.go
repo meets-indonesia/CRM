@@ -24,6 +24,14 @@ type OAuthUseCase struct {
 	jwtDuration  time.Duration
 }
 
+func (uc *OAuthUseCase) ListOAuthUsers(ctx context.Context) ([]model.OAuthAccount, error) {
+	accounts, err := uc.oauthRepo.ListOAuthUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return accounts, nil
+}
+
 func NewOAuthUseCase(
 	userRepo repository.UserRepository,
 	oauthRepo repository.OAuthRepository,
@@ -116,7 +124,7 @@ func (uc *OAuthUseCase) GoogleSignIn(ctx context.Context, code, redirectURI stri
 		Email:          userInfo.Email,
 		ProfilePicture: userInfo.Picture,
 		RoleID:         defaultRole.ID,
-		Password:       "", // OAuth users don't have a password
+		Password:       nil, // OAuth users don't have a password
 	}
 
 	// Create user

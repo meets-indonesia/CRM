@@ -42,3 +42,12 @@ func (r *userRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.Use
 func (r *userRepository) Update(ctx context.Context, user *model.User) error {
 	return r.db.WithContext(ctx).Save(user).Error
 }
+
+func (r *userRepository) FindByGoogleID(ctx context.Context, googleID string) (*model.User, error) {
+	var user model.User
+	err := r.db.WithContext(ctx).Where("google_id = ?", googleID).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}

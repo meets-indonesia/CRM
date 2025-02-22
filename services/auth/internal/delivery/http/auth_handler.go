@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/delivery/http/models"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/domain/model"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/usecase"
@@ -41,25 +42,11 @@ func (h *AuthHandler) Handle(c *gin.Context) {
 		h.handleVerifyOTP(c, baseRequest.Data)
 	case "reset_password":
 		h.handleResetPassword(c, baseRequest.Data)
+	case "login_oauth":
+		h.handleLoginOAuth(c, baseRequest.Data)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid action"})
 	}
-}
-
-func (h *AuthHandler) handleLogin(c *gin.Context, data interface{}) {
-	var loginData models.LoginData
-	if err := convertData(data, &loginData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	token, err := h.authUseCase.Login(c.Request.Context(), loginData.Email, loginData.Password)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"token": token})
 }
 
 func (h *AuthHandler) handleRegister(c *gin.Context, data interface{}) {
@@ -69,20 +56,134 @@ func (h *AuthHandler) handleRegister(c *gin.Context, data interface{}) {
 		return
 	}
 
+	var password *string
+	if registerData.Password != "" {
+		password = &registerData.Password
+	}
+
+	var googleID *string
+	if registerData.GoogleID != "" {
+		googleID = &registerData.GoogleID
+	}
+
+	// Handle role ID
+	var roleID uuid.UUID
+	var err error
+
+	// If it's a mobile user (has GoogleID) and no roleID provided
+	if googleID != nil && registerData.RoleID == "" {
+		defaultRole, err := h.authUseCase.GetDefaultRole(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get default role"})
+			return
+		}
+		roleID = defaultRole.ID
+	} else if registerData.RoleID != "" {
+		// Convert string to UUID if provided
+		roleID, err = uuid.Parse(registerData.RoleID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid role ID format"})
+			return
+		}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Role ID is required for admin registration"})
+		return
+	}
+
 	user := &model.User{
 		FirstName: registerData.FirstName,
 		LastName:  registerData.LastName,
 		Email:     registerData.Email,
-		Password:  registerData.Password,
-		RoleID:    registerData.RoleID,
+		Password:  password,
+		GoogleID:  googleID,
+		RoleID:    roleID,
 	}
 
 	if err := h.authUseCase.Register(c.Request.Context(), user); err != nil {
+		// Check if it's an existing user error with Google ID
+		if autoLoginErr, ok := err.(*usecase.AutoLoginError); ok {
+			// Return special response for auto-login
+			c.JSON(http.StatusConflict, gin.H{
+				"error":   "user_exists",
+				"message": autoLoginErr.Message,
+				"action":  "auto_login",
+				"data": gin.H{
+					"email":     autoLoginErr.Email,
+					"google_id": autoLoginErr.GoogleID,
+				},
+			})
+			return
+		}
+
+		// Handle regular email exists error
+		if err.Error() == "email already registered" {
+			c.JSON(http.StatusConflict, gin.H{
+				"error":   "email_exists",
+				"message": "Email already registered",
+			})
+			return
+		}
+
+		// Handle other errors
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "User registered successfully"})
+}
+
+func (h *AuthHandler) handleLoginOAuth(c *gin.Context, data interface{}) {
+	var loginData struct {
+		Email    string `json:"email" binding:"required,email"`
+		GoogleID string `json:"google_id" binding:"required"`
+	}
+
+	if err := convertData(data, &loginData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	token, err := h.authUseCase.LoginOAuth(c.Request.Context(), loginData.Email, loginData.GoogleID)
+	if err != nil {
+		if err.Error() == "account uses password authentication" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "invalid_auth_type",
+				"message": "This account uses password authentication",
+			})
+			return
+		}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": token})
+}
+
+func (h *AuthHandler) handleLogin(c *gin.Context, data interface{}) {
+	var loginData struct {
+		Email    string `json:"email" binding:"required,email"`
+		Password string `json:"password" binding:"required"`
+	}
+
+	if err := convertData(data, &loginData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	token, err := h.authUseCase.Login(c.Request.Context(), loginData.Email, loginData.Password)
+	if err != nil {
+		if err.Error() == "this account uses Google authentication" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "invalid_auth_type",
+				"message": "This account uses Google authentication",
+			})
+			return
+		}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": token})
 }
 
 func (h *AuthHandler) handleForgotPassword(c *gin.Context, data interface{}) {

@@ -46,3 +46,14 @@ func (r *oauthRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([
 	}
 	return accounts, nil
 }
+
+func (r *oauthRepository) ListOAuthUsers(ctx context.Context) ([]model.OAuthAccount, error) {
+	var oauthAccounts []model.OAuthAccount
+	err := r.db.WithContext(ctx).
+		Preload("User"). // This will load the associated User data
+		Find(&oauthAccounts).Error
+	if err != nil {
+		return nil, err
+	}
+	return oauthAccounts, nil
+}

@@ -117,8 +117,9 @@ func (uc *ForgotPasswordUseCase) ResetPassword(ctx context.Context, email, newPa
 	if err != nil {
 		return err
 	}
+	hashedStr := string(hashedPassword)
+	user.Password = &hashedStr
 
-	user.Password = string(hashedPassword)
 	return uc.userRepo.Update(ctx, user)
 }
 

@@ -43,7 +43,7 @@ func main() {
 	defer rabbitMQ.Close()
 
 	// Auto Migrate
-	err = db.AutoMigrate(&model.Role{}, &model.User{}, &model.OTP{})
+	err = db.AutoMigrate(&model.Role{}, &model.User{}, &model.OAuthAccount{})
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}

@@ -1,7 +1,5 @@
 package models
 
-import "github.com/google/uuid"
-
 type Meta struct {
 	Action string `json:"action" binding:"required"`
 }
@@ -17,12 +15,14 @@ type LoginData struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// services/auth/internal/delivery/http/models/request.go
 type RegisterData struct {
-	FirstName string    `json:"first_name" binding:"required"`
-	LastName  string    `json:"last_name" binding:"required"`
-	Email     string    `json:"email" binding:"required,email"`
-	Password  string    `json:"password" binding:"required,min=6"`
-	RoleID    uuid.UUID `json:"role_id" binding:"required"`
+	FirstName string `json:"first_name" binding:"required"`
+	LastName  string `json:"last_name" binding:"required"`
+	Email     string `json:"email" binding:"required,email"`
+	Password  string `json:"password"`
+	GoogleID  string `json:"google_id"`
+	RoleID    string `json:"role_id"` // Change to string to handle empty value
 }
 
 type ForgotPasswordData struct {

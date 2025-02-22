@@ -1,11 +1,11 @@
 package middleware
 
 import (
+	"fmt"
 	"strings"
 
-	"github.com/kevinnaserwan/crm-be/services/auth/internal/util"
-
 	"github.com/gin-gonic/gin"
+	"github.com/kevinnaserwan/crm-be/services/auth/internal/util"
 )
 
 func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
@@ -31,7 +31,11 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 			return
 		}
 
+		// Explicitly set as string
 		c.Set("userID", claims.UserID)
+		c.Set("userRole", claims.Role)
+		fmt.Printf("DEBUG: Setting role in middleware: %s\n", claims.Role)
+
 		c.Next()
 	}
 }

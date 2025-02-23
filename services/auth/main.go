@@ -76,11 +76,13 @@ func main() {
 		cfg.JWTSecret,
 		cfg.JWTExpiration,
 	)
+	userUseCase := usecase.NewUserUseCase(userRepo)
 
 	// Initialize Handlers
 	authHandler := http.NewAuthHandler(authUseCase, forgotPasswordUseCase)
 	roleHandler := http.NewRoleHandler(roleUseCase)
-	oauthHandler := http.NewOAuthHandler(oauthUseCase) // Add this
+	oauthHandler := http.NewOAuthHandler(oauthUseCase)
+	userHandler := http.NewUserHandler(userUseCase)
 
 	// Setup Router
 	router := gin.Default()
@@ -105,7 +107,7 @@ func main() {
 	protected := router.Group("/api")
 	protected.Use(middleware.AuthMiddleware(cfg.JWTSecret))
 	{
-		// Add protected routes here
+		protected.GET("/users/:id", userHandler.GetUserByID)
 	}
 
 	// Load HTML templates

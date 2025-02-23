@@ -30,8 +30,9 @@ const (
 // Feedback represents the main feedback entity
 type Feedback struct {
 	gorm.Model
-	ID             uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`
+	ID             uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"` // Make sure this is correct
 	UserID         uuid.UUID `gorm:"type:uuid;column:user_id;not null"`
+	UserEmail      string    `gorm:"type:varchar(255);column:user_email;not null"`
 	FeedbackDate   time.Time `gorm:"type:timestamp;column:feedback_date;not null"`
 	FeedbackTypeID uuid.UUID `gorm:"type:uuid;column:feedback_type_id;not null"`
 	StationID      uuid.UUID `gorm:"type:uuid;column:station_id;not null"`
@@ -50,7 +51,7 @@ type Feedback struct {
 type FeedbackResponse struct {
 	gorm.Model
 	ID           uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`
-	FeedbackID   uuid.UUID `gorm:"type:uuid;column:feedback_id;not null"`
+	FeedbackID   uuid.UUID `gorm:"type:uuid;column:feedback_id;not null;unique"`
 	Response     string    `gorm:"type:text;column:response;not null"`
 	ResponseDate time.Time `gorm:"type:timestamp;column:response_date;not null"`
 

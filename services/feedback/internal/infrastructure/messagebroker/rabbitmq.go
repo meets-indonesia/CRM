@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/kevinnaserwan/crm-be/services/feedback/internal/domain/model"
+	"github.com/kevinnaserwan/crm-be/services/feedback/internal/infrastructure/email"
 	"github.com/streadway/amqp"
 )
 
@@ -20,9 +21,11 @@ type RabbitMQ struct {
 }
 
 // Event payloads
+// Event payloads
 type FeedbackCreatedEvent struct {
 	FeedbackID   string  `json:"feedback_id"`
 	UserID       string  `json:"user_id"`
+	UserEmail    string  `json:"user_email"` // Add this
 	FeedbackType string  `json:"feedback_type"`
 	Station      string  `json:"station"`
 	Feedback     string  `json:"feedback"`
@@ -33,6 +36,7 @@ type FeedbackCreatedEvent struct {
 type FeedbackRespondedEvent struct {
 	FeedbackID  string `json:"feedback_id"`
 	UserID      string `json:"user_id"`
+	UserEmail   string `json:"user_email"` // Add this
 	Response    string `json:"response"`
 	RespondedAt string `json:"responded_at"`
 }
@@ -70,10 +74,11 @@ func NewRabbitMQ(url string) (*RabbitMQ, error) {
 	}, nil
 }
 
-func (r *RabbitMQ) PublishFeedbackCreated(feedback *model.Feedback) error {
+func (r *RabbitMQ) PublishFeedbackCreated(feedback *model.Feedback, userEmail string) error {
 	event := FeedbackCreatedEvent{
 		FeedbackID:   feedback.ID.String(),
 		UserID:       feedback.UserID.String(),
+		UserEmail:    userEmail, // Add this
 		FeedbackType: feedback.FeedbackType.Name,
 		Station:      feedback.Station.Name,
 		Feedback:     feedback.Feedback,
@@ -84,9 +89,10 @@ func (r *RabbitMQ) PublishFeedbackCreated(feedback *model.Feedback) error {
 	return r.publishMessage(FeedbackCreatedQueue, event)
 }
 
-func (r *RabbitMQ) PublishFeedbackResponded(response *model.FeedbackResponse) error {
+func (r *RabbitMQ) PublishFeedbackResponded(response *model.FeedbackResponse, userEmail string) error {
 	event := FeedbackRespondedEvent{
 		FeedbackID:  response.FeedbackID.String(),
+		UserEmail:   userEmail, // Add this
 		Response:    response.Response,
 		RespondedAt: response.ResponseDate.Format("2006-01-02 15:04:05"),
 	}
@@ -149,4 +155,79 @@ func (r *RabbitMQ) Close() {
 	if r.conn != nil {
 		r.conn.Close()
 	}
+}
+
+func (r *RabbitMQ) ConsumeFeedbackEvents(emailService *email.EmailService) {
+	// Consume feedback.created events
+	go func() {
+		msgs, err := r.channel.Consume(
+			FeedbackCreatedQueue,
+			"",    // consumer
+			true,  // auto-ack
+			false, // exclusive
+			false, // no-local
+			false, // no-wait
+			nil,   // args
+		)
+		if err != nil {
+			log.Printf("Failed to register feedback.created consumer: %v", err)
+			return
+		}
+
+		for msg := range msgs {
+			var event FeedbackCreatedEvent
+			if err := json.Unmarshal(msg.Body, &event); err != nil {
+				log.Printf("Error unmarshaling feedback.created event: %v", err)
+				continue
+			}
+
+			feedbackData := map[string]interface{}{
+				"type":    event.FeedbackType,
+				"station": event.Station,
+				"message": event.Feedback,
+				"rating":  event.Rating,
+			}
+
+			// Send email to admin
+			// Note: You'll need to get admin email from somewhere
+			if err := emailService.SendFeedbackCreatedEmail(feedbackData, "admin@example.com"); err != nil {
+				log.Printf("Error sending feedback created email: %v", err)
+			}
+		}
+	}()
+
+	// Consume feedback.responded events
+	go func() {
+		msgs, err := r.channel.Consume(
+			FeedbackRespondedQueue,
+			"",    // consumer
+			true,  // auto-ack
+			false, // exclusive
+			false, // no-local
+			false, // no-wait
+			nil,   // args
+		)
+		if err != nil {
+			log.Printf("Failed to register feedback.responded consumer: %v", err)
+			return
+		}
+
+		for msg := range msgs {
+			var event FeedbackRespondedEvent
+			if err := json.Unmarshal(msg.Body, &event); err != nil {
+				log.Printf("Error unmarshaling feedback.responded event: %v", err)
+				continue
+			}
+
+			responseData := map[string]interface{}{
+				"message": event.Response,
+				"date":    event.RespondedAt,
+			}
+
+			// Send email to user
+			if err := emailService.SendFeedbackResponseEmail(responseData, event.UserEmail); err != nil {
+				log.Printf("Error sending feedback response email: %v", err)
+			}
+		}
+	}()
 }

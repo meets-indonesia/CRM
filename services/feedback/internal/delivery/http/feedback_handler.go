@@ -3,21 +3,25 @@ package http
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/kevinnaserwan/crm-be/services/feedback/internal/delivery/http/models"
 	"github.com/kevinnaserwan/crm-be/services/feedback/internal/domain/model"
+	"github.com/kevinnaserwan/crm-be/services/feedback/internal/infrastructure/auth"
 	"github.com/kevinnaserwan/crm-be/services/feedback/internal/usecase"
 )
 
 type FeedbackHandler struct {
 	feedbackUseCase *usecase.FeedbackUseCase
+	authService     *auth.AuthService
 }
 
-func NewFeedbackHandler(feedbackUseCase *usecase.FeedbackUseCase) *FeedbackHandler {
+func NewFeedbackHandler(feedbackUseCase *usecase.FeedbackUseCase, authService *auth.AuthService) *FeedbackHandler {
 	return &FeedbackHandler{
 		feedbackUseCase: feedbackUseCase,
+		authService:     authService,
 	}
 }
 
@@ -63,18 +67,25 @@ func (h *FeedbackHandler) handleCreateFeedback(c *gin.Context, data interface{})
 		return
 	}
 
-	// Now userID is already UUID type from middleware
+	userEmail, exists := c.Get("userEmail")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user email not found"})
+		return
+	}
+
 	feedback := &model.Feedback{
-		ID:             uuid.New(),
-		UserID:         userID.(uuid.UUID), // This should work now
+		UserID:         userID.(uuid.UUID),
+		UserEmail:      userEmail.(string), // Tambahkan ini
 		FeedbackTypeID: feedbackData.FeedbackTypeID,
 		StationID:      feedbackData.StationID,
 		Feedback:       feedbackData.Feedback,
 		Documentation:  feedbackData.Documentation,
 		Rating:         feedbackData.Rating,
+		FeedbackDate:   time.Now(),
+		Status:         model.FeedbackStatusPending,
 	}
 
-	if err := h.feedbackUseCase.CreateFeedback(c.Request.Context(), feedback); err != nil {
+	if err := h.feedbackUseCase.CreateFeedback(c.Request.Context(), feedback, userEmail.(string)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -138,7 +149,20 @@ func (h *FeedbackHandler) handleRespondToFeedback(c *gin.Context, data interface
 		return
 	}
 
-	if err := h.feedbackUseCase.RespondToFeedback(c.Request.Context(), responseData.FeedbackID, responseData.Response); err != nil {
+	// Get the feedback
+	feedback, err := h.feedbackUseCase.GetFeedbackByID(c.Request.Context(), responseData.FeedbackID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get feedback details"})
+		return
+	}
+
+	// Gunakan email yang tersimpan
+	if err := h.feedbackUseCase.RespondToFeedback(
+		c.Request.Context(),
+		responseData.FeedbackID,
+		responseData.Response,
+		feedback.UserEmail, // Gunakan email yang tersimpan
+	); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

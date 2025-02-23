@@ -17,6 +17,9 @@ func NewFeedbackRepository(db *gorm.DB) *feedbackRepository {
 }
 
 func (r *feedbackRepository) Create(ctx context.Context, feedback *model.Feedback) error {
+	// First create the feedback
+	feedback.ID = uuid.Nil // Set to nil to ensure GORM generates a new UUID
+
 	return r.db.WithContext(ctx).Create(feedback).Error
 }
 

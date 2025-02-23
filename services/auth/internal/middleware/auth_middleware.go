@@ -31,10 +31,12 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 			return
 		}
 
-		// Explicitly set as string
+		fmt.Printf("Setting context values - UserID: %v, Email: %v, Role: %v\n",
+			claims.UserID, claims.Email, claims.Role)
+
 		c.Set("userID", claims.UserID)
+		c.Set("userEmail", claims.Email) // Make sure this is set
 		c.Set("userRole", claims.Role)
-		fmt.Printf("DEBUG: Setting role in middleware: %s\n", claims.Role)
 
 		c.Next()
 	}

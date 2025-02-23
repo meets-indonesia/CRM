@@ -23,7 +23,25 @@ func (r *userRepository) Create(ctx context.Context, user *model.User) error {
 
 func (r *userRepository) FindByEmail(ctx context.Context, email string) (*model.User, error) {
 	var user model.User
-	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
+	err := r.db.WithContext(ctx).
+		Preload("Role").
+		Where("email = ?", email).
+		First(&user).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+// internal/repository/postgres/user_repository.go
+func (r *userRepository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+	var user model.User
+	err := r.db.WithContext(ctx).
+		Preload("Role"). // Load role relation
+		Where("email = ?", email).
+		First(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -34,6 +52,14 @@ func (r *userRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.Use
 	var user model.User
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
 	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
+	var user model.User
+	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil

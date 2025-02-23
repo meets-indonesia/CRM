@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang-jwt/jwt"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/domain/model"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/domain/repository"
 	"github.com/kevinnaserwan/crm-be/services/auth/internal/infrastructure/messagebroker"
@@ -113,23 +112,8 @@ func (uc *AuthUseCase) Login(ctx context.Context, email, password string) (strin
 		return "", errors.New("invalid credentials")
 	}
 
-	// Get user's role
-	role, err := uc.roleRepo.FindByID(ctx, user.RoleID)
-	if err != nil {
-		return "", errors.New("role not found")
-	}
-
-	claims := util.Claims{
-		UserID: user.ID,
-		Role:   role.Name, // Include role name here
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(uc.jwtDuration).Unix(),
-			IssuedAt:  time.Now().Unix(),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(uc.jwtSecret))
+	// Use generateToken instead of creating claims directly
+	return uc.generateToken(user)
 }
 
 // LoginOAuth for mobile users (email + googleID)
@@ -148,11 +132,30 @@ func (uc *AuthUseCase) LoginOAuth(ctx context.Context, email, googleID string) (
 	}
 
 	// Generate JWT token
-	token, err := util.GenerateJWT(user.ID, user.Role.Name, uc.jwtSecret, uc.jwtDuration)
+	token, err := util.GenerateJWT(user.ID, user.Email, user.Role.Name, uc.jwtSecret, uc.jwtDuration)
 	if err != nil {
 		return "", err
 	}
 
+	return token, nil
+}
+
+// internal/usecase/auth_usecase.go
+func (uc *AuthUseCase) generateToken(user *model.User) (string, error) {
+	// Debug print untuk memeriksa nilai
+	fmt.Printf("Debug - User data: ID=%v, Email=%v, Role=%v\n",
+		user.ID, user.Email, user.Role.Name)
+
+	token, err := util.GenerateJWT(
+		user.ID,
+		user.Email, // Pastikan urutan parameter sesuai
+		user.Role.Name,
+		uc.jwtSecret,
+		uc.jwtDuration,
+	)
+	if err != nil {
+		return "", err
+	}
 	return token, nil
 }
 

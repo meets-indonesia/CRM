@@ -71,6 +71,11 @@ services:
       - JWT_SECRET=your-secret-key
       - SERVER_PORT=8082
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USERNAME=naufalmuzakki895@gmail.com
+      - SMTP_PASSWORD=vblv goxg qhom ysrv
+      - AUTH_SERVICE_URL=http://auth:8080
     depends_on:
       postgres:
         condition: service_healthy

@@ -10,6 +10,8 @@ import (
 	"github.com/kevinnaserwan/crm-be/services/feedback/internal/config"
 	"github.com/kevinnaserwan/crm-be/services/feedback/internal/delivery/http"
 	"github.com/kevinnaserwan/crm-be/services/feedback/internal/domain/model"
+	"github.com/kevinnaserwan/crm-be/services/feedback/internal/infrastructure/auth"
+	"github.com/kevinnaserwan/crm-be/services/feedback/internal/infrastructure/email"
 	"github.com/kevinnaserwan/crm-be/services/feedback/internal/infrastructure/messagebroker"
 	"github.com/kevinnaserwan/crm-be/services/feedback/internal/middleware"
 	repopostgre "github.com/kevinnaserwan/crm-be/services/feedback/internal/repository/postgres"
@@ -60,8 +62,23 @@ func main() {
 		rabbitMQ,
 	)
 
-	// Initialize Handlers
-	feedbackHandler := http.NewFeedbackHandler(feedbackUseCase)
+	// Initialize auth service
+	authService := auth.NewAuthService(cfg.AuthServiceURL)
+
+	// Initialize handlers with auth service
+	feedbackHandler := http.NewFeedbackHandler(feedbackUseCase, authService)
+
+	// Initialize email service
+	emailConfig := email.EmailConfig{
+		Host:     cfg.SMTPHost,
+		Port:     cfg.SMTPPort,
+		Username: cfg.SMTPUsername,
+		Password: cfg.SMTPPassword,
+	}
+	emailService := email.NewEmailService(emailConfig)
+
+	// Start RabbitMQ consumers
+	go rabbitMQ.ConsumeFeedbackEvents(emailService)
 
 	// Setup Router
 	router := gin.Default()

@@ -36,7 +36,7 @@ func NewFeedbackUseCase(
 }
 
 // CreateFeedback creates a new feedback
-func (uc *FeedbackUseCase) CreateFeedback(ctx context.Context, feedback *model.Feedback) error {
+func (uc *FeedbackUseCase) CreateFeedback(ctx context.Context, feedback *model.Feedback, userEmail string) error {
 	// Validate feedback type exists
 	if _, err := uc.feedbackTypeRepo.GetByID(ctx, feedback.FeedbackTypeID); err != nil {
 		return errors.New("invalid feedback type")
@@ -55,12 +55,16 @@ func (uc *FeedbackUseCase) CreateFeedback(ctx context.Context, feedback *model.F
 		return err
 	}
 
-	// Publish event to RabbitMQ
-	return uc.rabbitMQ.PublishFeedbackCreated(feedback)
+	if err := uc.feedbackRepo.Create(ctx, feedback); err != nil {
+		return err
+	}
+
+	// Publish event with user email
+	return uc.rabbitMQ.PublishFeedbackCreated(feedback, userEmail)
 }
 
 // RespondToFeedback allows admin to respond to a feedback
-func (uc *FeedbackUseCase) RespondToFeedback(ctx context.Context, feedbackID uuid.UUID, responseText string) error {
+func (uc *FeedbackUseCase) RespondToFeedback(ctx context.Context, feedbackID uuid.UUID, responseText string, userEmail string) error {
 	feedback, err := uc.feedbackRepo.GetByID(ctx, feedbackID)
 	if err != nil {
 		return errors.New("feedback not found")
@@ -86,8 +90,21 @@ func (uc *FeedbackUseCase) RespondToFeedback(ctx context.Context, feedbackID uui
 		return err
 	}
 
-	// Publish event to RabbitMQ
-	return uc.rabbitMQ.PublishFeedbackResponded(response)
+	if err := uc.feedbackResponseRepo.Create(ctx, response); err != nil {
+		return err
+	}
+
+	// Update feedback status
+	if err := uc.feedbackRepo.UpdateStatus(ctx, feedbackID, model.FeedbackStatusSolved); err != nil {
+		return err
+	}
+
+	// Publish event with user email
+	return uc.rabbitMQ.PublishFeedbackResponded(response, userEmail)
+}
+
+func (uc *FeedbackUseCase) GetFeedbackByID(ctx context.Context, id uuid.UUID) (*model.Feedback, error) {
+	return uc.feedbackRepo.GetByID(ctx, id)
 }
 
 // GetUserFeedbacks gets all feedbacks for a user

@@ -20,6 +20,14 @@ type Config struct {
 
 	// RabbitMQ configuration
 	RabbitMQURL string `mapstructure:"RABBITMQ_URL"`
+
+	// SMTP configuration
+	SMTPHost     string `mapstructure:"SMTP_HOST"`
+	SMTPPort     string `mapstructure:"SMTP_PORT"`
+	SMTPUsername string `mapstructure:"SMTP_USERNAME"`
+	SMTPPassword string `mapstructure:"SMTP_PASSWORD"`
+
+	AuthServiceURL string `mapstructure:"AUTH_SERVICE_URL"`
 }
 
 func LoadConfig() (Config, error) {
@@ -33,6 +41,12 @@ func LoadConfig() (Config, error) {
 	viper.SetDefault("SERVER_PORT", "8082")
 	viper.SetDefault("JWT_SECRET", "your-secret-key")
 	viper.SetDefault("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
+	// SMTP defaults - using your existing email from auth service
+	viper.SetDefault("SMTP_HOST", "smtp.gmail.com")
+	viper.SetDefault("SMTP_PORT", "587")
+	viper.SetDefault("SMTP_USERNAME", "naufalmuzakki895@gmail.com")
+	viper.SetDefault("SMTP_PASSWORD", "vblv goxg qhom ysrv")
+	viper.SetDefault("AUTH_SERVICE_URL", "http://auth:8080")
 
 	viper.AutomaticEnv()
 
@@ -44,6 +58,12 @@ func LoadConfig() (Config, error) {
 	config.ServerPort = viper.GetString("SERVER_PORT")
 	config.JWTSecret = viper.GetString("JWT_SECRET")
 	config.RabbitMQURL = viper.GetString("RABBITMQ_URL")
+	// Load SMTP config
+	config.SMTPHost = viper.GetString("SMTP_HOST")
+	config.SMTPPort = viper.GetString("SMTP_PORT")
+	config.SMTPUsername = viper.GetString("SMTP_USERNAME")
+	config.SMTPPassword = viper.GetString("SMTP_PASSWORD")
+	config.AuthServiceURL = viper.GetString("AUTH_SERVICE_URL")
 
 	return config, nil
 }

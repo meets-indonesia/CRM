@@ -10,6 +10,7 @@ func Migrate(db *gorm.DB) {
 		&model.FeedbackType{},
 		&model.Station{},
 		&model.Feedback{},
+		&model.FeedbackResponse{},
 	)
 	if err != nil {
 		panic(err)

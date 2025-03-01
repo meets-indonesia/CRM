@@ -33,3 +33,7 @@ type CreateFeedbackTypeData struct {
 type CreateStationData struct {
 	Name string `json:"name" binding:"required"`
 }
+
+type GetUserFeedbacksData struct {
+	UserID string `json:"user_id" binding:"required"`
+}

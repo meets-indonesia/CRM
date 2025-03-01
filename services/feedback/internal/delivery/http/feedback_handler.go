@@ -1,7 +1,9 @@
 package http
 
 import (
+	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -26,6 +28,16 @@ func NewFeedbackHandler(feedbackUseCase *usecase.FeedbackUseCase, authService *a
 }
 
 func (h *FeedbackHandler) Handle(c *gin.Context) {
+	// Read the raw body
+	bodyBytes, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
+		return
+	}
+
+	// Restore the body for further processing
+	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
 	var baseRequest models.BaseRequest
 	if err := c.ShouldBindJSON(&baseRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -42,7 +54,32 @@ func (h *FeedbackHandler) Handle(c *gin.Context) {
 	case "respond_to_feedback":
 		h.handleRespondToFeedback(c, baseRequest.Data)
 	case "get_user_feedbacks":
-		h.handleGetUserFeedbacks(c)
+		// Extract user_id directly from the data
+		dataMap, ok := baseRequest.Data.(map[string]interface{})
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid data format"})
+			return
+		}
+
+		userIDStr, ok := dataMap["user_id"].(string)
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required and must be a string"})
+			return
+		}
+
+		userID, err := uuid.Parse(userIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID format"})
+			return
+		}
+
+		feedbacks, err := h.feedbackUseCase.GetUserFeedbacks(c.Request.Context(), userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": feedbacks})
 	case "get_all_feedbacks":
 		h.handleGetAllFeedbacks(c)
 	case "get_feedback_types":
@@ -168,22 +205,6 @@ func (h *FeedbackHandler) handleRespondToFeedback(c *gin.Context, data interface
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Response submitted successfully"})
-}
-
-func (h *FeedbackHandler) handleGetUserFeedbacks(c *gin.Context) {
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
-		return
-	}
-
-	feedbacks, err := h.feedbackUseCase.GetUserFeedbacks(c.Request.Context(), userID.(uuid.UUID))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": feedbacks})
 }
 
 func (h *FeedbackHandler) handleGetAllFeedbacks(c *gin.Context) {

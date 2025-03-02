@@ -55,10 +55,6 @@ func (uc *FeedbackUseCase) CreateFeedback(ctx context.Context, feedback *model.F
 		return err
 	}
 
-	if err := uc.feedbackRepo.Create(ctx, feedback); err != nil {
-		return err
-	}
-
 	// Publish event with user email
 	return uc.rabbitMQ.PublishFeedbackCreated(feedback, userEmail)
 }

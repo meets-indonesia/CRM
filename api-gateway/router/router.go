@@ -24,6 +24,11 @@ func Setup(cfg *config.Config) *gin.Engine {
 	// Initialize proxies
 	authProxy := proxy.NewAuthProxy(cfg.Services.AuthURL)
 	userProxy := proxy.NewUserProxy(cfg.Services.UserURL)
+	feedbackProxy := proxy.NewFeedbackProxy(cfg.Services.FeedbackURL)
+	rewardProxy := proxy.NewRewardProxy(cfg.Services.RewardURL)
+	inventoryProxy := proxy.NewInventoryProxy(cfg.Services.InventoryURL)
+	articleProxy := proxy.NewArticleProxy(cfg.Services.ArticleURL)
+	notificationProxy := proxy.NewNotificationProxy(cfg.Services.NotificationURL)
 	// Inisialisasi proxy lainnya...
 
 	// Public routes (no auth required)
@@ -44,8 +49,13 @@ func Setup(cfg *config.Config) *gin.Engine {
 	}
 
 	// Articles public routes
-	r.GET("/articles", nil)     // Tambahkan articleProxy.ListArticles nanti
-	r.GET("/articles/:id", nil) // Tambahkan articleProxy.GetArticle nanti
+	r.GET("/articles", articleProxy.ListArticles)
+	r.GET("/articles/:id", articleProxy.ViewArticle)
+	r.GET("/articles/search", articleProxy.SearchArticles)
+
+	// Public rewards routes
+	r.GET("/rewards", rewardProxy.ListRewards)
+	r.GET("/rewards/:id", rewardProxy.GetReward)
 
 	// Routes that require authentication
 	authorized := r.Group("/")
@@ -59,6 +69,50 @@ func Setup(cfg *config.Config) *gin.Engine {
 		admin.GET("/users/admin", userProxy.ListAdmins)
 		admin.GET("/users/customer", userProxy.ListCustomers)
 
+		// Feedback management
+		admin.GET("/feedbacks", feedbackProxy.ListAllFeedback)
+		admin.GET("/feedbacks/pending", feedbackProxy.ListPendingFeedback)
+		admin.PUT("/feedbacks/:id/respond", feedbackProxy.RespondToFeedback)
+		admin.GET("/feedbacks/user/:user_id", feedbackProxy.ListUserFeedback)
+
+		// Reward management
+		admin.POST("/rewards", rewardProxy.CreateReward)
+		admin.PUT("/rewards/:id", rewardProxy.UpdateReward)
+		admin.DELETE("/rewards/:id", rewardProxy.DeleteReward)
+		admin.GET("/claims", rewardProxy.ListAllClaims)
+		admin.GET("/claims/:id", rewardProxy.GetClaim)
+		admin.PUT("/claims/:id/status", rewardProxy.UpdateClaimStatus)
+		admin.GET("/claims/user/:user_id", rewardProxy.ListUserClaims)
+		admin.GET("/claims/status/:status", rewardProxy.ListClaimsByStatus)
+
+		// Inventory management
+		admin.POST("/items", inventoryProxy.CreateItem)
+		admin.PUT("/items/:id", inventoryProxy.UpdateItem)
+		admin.DELETE("/items/:id", inventoryProxy.DeleteItem)
+		admin.GET("/items/low-stock", inventoryProxy.GetLowStockItems)
+		admin.POST("/items/:id/stock/increase", inventoryProxy.IncreaseStock)
+		admin.POST("/items/:id/stock/decrease", inventoryProxy.DecreaseStock)
+		admin.GET("/transactions", inventoryProxy.ListAllStockTransactions)
+		admin.GET("/transactions/:id", inventoryProxy.GetStockTransaction)
+		admin.GET("/transactions/item/:id", inventoryProxy.ListStockTransactionsByItem)
+		admin.POST("/suppliers", inventoryProxy.CreateSupplier)
+		admin.GET("/suppliers", inventoryProxy.ListSuppliers)
+		admin.GET("/suppliers/:id", inventoryProxy.GetSupplier)
+		admin.PUT("/suppliers/:id", inventoryProxy.UpdateSupplier)
+		admin.DELETE("/suppliers/:id", inventoryProxy.DeleteSupplier)
+		admin.GET("/suppliers/search", inventoryProxy.SearchSuppliers)
+
+		// Article management
+		admin.POST("/articles", articleProxy.CreateArticle)
+		admin.PUT("/articles/:id", articleProxy.UpdateArticle)
+		admin.DELETE("/articles/:id", articleProxy.DeleteArticle)
+
+		// Notification management
+		admin.POST("/notifications/email", notificationProxy.SendEmail)
+		admin.POST("/notifications/push", notificationProxy.SendPushNotification)
+		admin.POST("/notifications/process", notificationProxy.ProcessPendingNotifications)
+		admin.GET("/notifications/user/:user_id", notificationProxy.ListUserNotifications)
+
 		// Tambahkan rute admin lainnya...
 	}
 
@@ -67,15 +121,34 @@ func Setup(cfg *config.Config) *gin.Engine {
 	customer.Use(middleware.CustomerOnly())
 	{
 		// Profile
-		customer.GET("/users/:id", userProxy.GetUser)
+		// customer.GET("/users/:id", userProxy.GetUser)  // hapus command jika ingin get user data hanya dilakukan oleh user
 		customer.PUT("/users/:id", userProxy.UpdateUser)
 		customer.GET("/users/customer/:id/points", userProxy.GetCustomerPoints)
+
+		// Feedback
+		customer.POST("/feedbacks", feedbackProxy.CreateFeedback)
+		customer.GET("/feedbacks/user", feedbackProxy.ListUserFeedback)
+
+		// Reward
+		customer.POST("/claims", rewardProxy.ClaimReward)
+		customer.GET("/claims/user", rewardProxy.ListUserClaims)
+
+		// Notifications
+		customer.GET("/notifications", notificationProxy.ListUserNotifications)
 
 		// Tambahkan rute customer lainnya...
 	}
 
 	// Common authenticated routes (accessible by both admin and customer)
-	// ...
+	authorized.GET("/users/:id", userProxy.GetUser)
+	authorized.GET("/feedbacks/:id", feedbackProxy.GetFeedback)
+	authorized.GET("/notifications/:id", notificationProxy.GetNotification)
+
+	// Inventory public routes
+	r.GET("/items", inventoryProxy.ListItems)
+	r.GET("/items/:id", inventoryProxy.GetItem)
+	r.GET("/items/category/:category", inventoryProxy.ListItemsByCategory)
+	r.GET("/items/search", inventoryProxy.SearchItems)
 
 	return r
 }

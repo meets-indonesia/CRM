@@ -16,7 +16,7 @@ func NewPostgresDB(config config.DatabaseConfig) (*gorm.DB, error) {
 		config.Host, config.Port, config.User, config.Password, config.Name, config.SSLMode)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Error), // ganti dengan error, terapkan pada semua service!
 	})
 	if err != nil {
 		return nil, err

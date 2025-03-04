@@ -1,5 +1,66 @@
 package main
 
-func main() {
+import (
+	"log"
+	"os"
 
+	"github.com/gin-gonic/gin"
+	"github.com/kevinnaserwan/crm-be/services/feedback/config"
+	"github.com/kevinnaserwan/crm-be/services/feedback/domain/usecase"
+	"github.com/kevinnaserwan/crm-be/services/feedback/infrastructure/db"
+	"github.com/kevinnaserwan/crm-be/services/feedback/infrastructure/messaging"
+	"github.com/kevinnaserwan/crm-be/services/feedback/interface/handler"
+	"github.com/kevinnaserwan/crm-be/services/feedback/interface/router"
+	"github.com/kevinnaserwan/crm-be/services/feedback/repository"
+)
+
+func main() {
+	// Load configuration
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	// Setup database
+	database, err := db.NewPostgresDB(cfg.Database)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	// Setup RabbitMQ
+	rabbitMQ, err := messaging.NewRabbitMQ(cfg.RabbitMQ)
+	if err != nil {
+		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
+	}
+	defer rabbitMQ.Close()
+
+	// Setup repositories
+	feedbackRepo := repository.NewGormFeedbackRepository(database)
+
+	// Setup usecase
+	feedbackUsecase := usecase.NewFeedbackUsecase(feedbackRepo, rabbitMQ)
+
+	// Setup handler
+	feedbackHandler := handler.NewFeedbackHandler(feedbackUsecase)
+
+	// Add config to Gin context
+	gin.SetMode(cfg.Server.Mode)
+	r := gin.New()
+	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(func(c *gin.Context) {
+		c.Set("config", cfg)
+		c.Next()
+	})
+
+	// Setup router
+	router := router.Setup(cfg, feedbackHandler)
+
+	// Start server
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = cfg.Server.Port
+	}
+
+	log.Printf("Feedback Service starting on port %s", port)
+	router.Run(":" + port)
 }

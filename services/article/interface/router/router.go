@@ -17,7 +17,7 @@ func Setup(cfg *config.Config, articleHandler *handler.ArticleHandler) *gin.Engi
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
-	// Add config to Gin context
+	// Tambahkan config ke context
 	r.Use(func(c *gin.Context) {
 		c.Set("config", cfg)
 		c.Next()

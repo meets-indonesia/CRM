@@ -43,8 +43,19 @@ func main() {
 	// Setup handler
 	feedbackHandler := handler.NewFeedbackHandler(feedbackUsecase)
 
+	// Setup subscriber
+	subscriber, err := messaging.NewRabbitMQSubscriber(cfg.RabbitMQ, feedbackUsecase)
+	if err != nil {
+		log.Fatalf("Failed to create RabbitMQ subscriber: %v", err)
+	}
+	defer subscriber.Close()
+
+	// Subscribe to events
+	if err := subscriber.SubscribeToEvents(); err != nil {
+		log.Fatalf("Failed to subscribe to events: %v", err)
+	}
+
 	// Add config to Gin context
-	gin.SetMode(cfg.Server.Mode)
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(func(c *gin.Context) {

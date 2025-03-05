@@ -24,37 +24,36 @@ func NewNotificationProxy(baseURL string) *NotificationProxy {
 
 // SendEmail handles send email requests
 func (p *NotificationProxy) SendEmail(c *gin.Context) {
-	p.proxyRequest(c, "/email", nil)
+	p.proxyRequest(c, "/notifications/email", nil)
 }
 
 // SendPushNotification handles send push notification requests
 func (p *NotificationProxy) SendPushNotification(c *gin.Context) {
-	p.proxyRequest(c, "/push", nil)
+	p.proxyRequest(c, "/notifications/push", nil)
 }
 
 // GetNotification handles get notification by ID requests
 func (p *NotificationProxy) GetNotification(c *gin.Context) {
-	p.proxyRequest(c, "/"+c.Param("id"), nil)
+	p.proxyRequest(c, "/notifications/"+c.Param("id"), nil)
 }
 
 // ListUserNotifications handles list user notifications requests
 func (p *NotificationProxy) ListUserNotifications(c *gin.Context) {
 	if c.Param("user_id") != "" {
-		p.proxyRequest(c, "/user/"+c.Param("user_id"), nil)
+		p.proxyRequest(c, "/notifications/user/"+c.Param("user_id"), nil)
 	} else {
-		p.proxyRequest(c, "", nil)
+		p.proxyRequest(c, "/notifications", nil)
 	}
 }
 
 // ProcessPendingNotifications handles process pending notifications requests
 func (p *NotificationProxy) ProcessPendingNotifications(c *gin.Context) {
-	p.proxyRequest(c, "/process", nil)
+	p.proxyRequest(c, "/notifications/process", nil)
 }
 
 // proxyRequest proxies a request to the Notification service
 func (p *NotificationProxy) proxyRequest(c *gin.Context, path string, transformRequestBody func([]byte) ([]byte, error)) {
 	targetURL := p.baseURL + path
-
 	// Read the request body
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {

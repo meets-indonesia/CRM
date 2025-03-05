@@ -45,6 +45,7 @@ func main() {
 
 	// Add config to Gin context
 	gin.SetMode(cfg.Server.Mode)
+
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(func(c *gin.Context) {

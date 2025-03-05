@@ -24,7 +24,7 @@ func NewFeedbackProxy(baseURL string) *FeedbackProxy {
 
 // CreateFeedback handles feedback creation requests
 func (p *FeedbackProxy) CreateFeedback(c *gin.Context) {
-	p.proxyRequest(c, "", nil)
+	p.proxyRequest(c, "/feedbacks", nil)
 }
 
 // GetFeedback handles get feedback by ID requests
@@ -39,7 +39,7 @@ func (p *FeedbackProxy) RespondToFeedback(c *gin.Context) {
 
 // ListAllFeedback handles list all feedback requests
 func (p *FeedbackProxy) ListAllFeedback(c *gin.Context) {
-	p.proxyRequest(c, "", nil)
+	p.proxyRequest(c, "/feedbacks", nil)
 }
 
 // ListPendingFeedback handles list pending feedback requests

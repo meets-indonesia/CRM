@@ -24,37 +24,37 @@ func NewArticleProxy(baseURL string) *ArticleProxy {
 
 // CreateArticle handles create article requests
 func (p *ArticleProxy) CreateArticle(c *gin.Context) {
-	p.proxyRequest(c, "", nil)
+	p.proxyRequest(c, "/articles", nil)
 }
 
 // GetArticle handles get article by ID requests
 func (p *ArticleProxy) GetArticle(c *gin.Context) {
-	p.proxyRequest(c, "/"+c.Param("id"), nil)
+	p.proxyRequest(c, "/articles/"+c.Param("id"), nil)
 }
 
 // UpdateArticle handles update article requests
 func (p *ArticleProxy) UpdateArticle(c *gin.Context) {
-	p.proxyRequest(c, "/"+c.Param("id"), nil)
+	p.proxyRequest(c, "/articles/"+c.Param("id"), nil)
 }
 
 // DeleteArticle handles delete article requests
 func (p *ArticleProxy) DeleteArticle(c *gin.Context) {
-	p.proxyRequest(c, "/"+c.Param("id"), nil)
+	p.proxyRequest(c, "/articles/"+c.Param("id"), nil)
 }
 
 // ListArticles handles list articles requests
 func (p *ArticleProxy) ListArticles(c *gin.Context) {
-	p.proxyRequest(c, "", nil)
+	p.proxyRequest(c, "/articles/articles", nil)
 }
 
 // ViewArticle handles viewing an article and incrementing view count
 func (p *ArticleProxy) ViewArticle(c *gin.Context) {
-	p.proxyRequest(c, "/"+c.Param("id"), nil)
+	p.proxyRequest(c, "/articles/"+c.Param("id"), nil)
 }
 
 // SearchArticles handles search articles requests
 func (p *ArticleProxy) SearchArticles(c *gin.Context) {
-	p.proxyRequest(c, "/search", nil)
+	p.proxyRequest(c, "/articles/search", nil)
 }
 
 // proxyRequest proxies a request to the Article service

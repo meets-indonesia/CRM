@@ -17,6 +17,12 @@ func Setup(cfg *config.Config, feedbackHandler *handler.FeedbackHandler) *gin.En
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
+	// Tambahkan config ke context
+	r.Use(func(c *gin.Context) {
+		c.Set("config", cfg)
+		c.Next()
+	})
+
 	// Health check endpoint
 	r.GET("/health", feedbackHandler.HealthCheck)
 

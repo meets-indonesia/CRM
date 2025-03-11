@@ -29,12 +29,12 @@ func (p *FeedbackProxy) CreateFeedback(c *gin.Context) {
 
 // GetFeedback handles get feedback by ID requests
 func (p *FeedbackProxy) GetFeedback(c *gin.Context) {
-	p.proxyRequest(c, "/"+c.Param("id"), nil)
+	p.proxyRequest(c, "/feedbacks/"+c.Param("id"), nil)
 }
 
 // RespondToFeedback handles respond to feedback requests
 func (p *FeedbackProxy) RespondToFeedback(c *gin.Context) {
-	p.proxyRequest(c, "/"+c.Param("id")+"/respond", nil)
+	p.proxyRequest(c, "/feedbacks/"+c.Param("id")+"/respond", nil)
 }
 
 // ListAllFeedback handles list all feedback requests
@@ -44,15 +44,15 @@ func (p *FeedbackProxy) ListAllFeedback(c *gin.Context) {
 
 // ListPendingFeedback handles list pending feedback requests
 func (p *FeedbackProxy) ListPendingFeedback(c *gin.Context) {
-	p.proxyRequest(c, "/pending", nil)
+	p.proxyRequest(c, "/feedbacks/pending", nil)
 }
 
 // ListUserFeedback handles list user feedback requests
 func (p *FeedbackProxy) ListUserFeedback(c *gin.Context) {
 	if c.Param("user_id") != "" {
-		p.proxyRequest(c, "/user/"+c.Param("user_id"), nil)
+		p.proxyRequest(c, "/feedbacks/user/"+c.Param("user_id"), nil)
 	} else {
-		p.proxyRequest(c, "/user", nil)
+		p.proxyRequest(c, "/feedbacks/user", nil)
 	}
 }
 

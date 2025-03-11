@@ -48,6 +48,9 @@ func Setup(cfg *config.Config) *gin.Engine {
 		auth.POST("/customer/google", authProxy.CustomerGoogleLogin)
 	}
 
+	// validate user token
+	r.GET("/validate", authProxy.ValidateToken)
+
 	// Articles public routes
 	r.GET("/articles", articleProxy.ListArticles)
 	r.GET("/articles/:id", articleProxy.ViewArticle)

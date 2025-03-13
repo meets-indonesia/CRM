@@ -44,7 +44,7 @@ func (p *ArticleProxy) DeleteArticle(c *gin.Context) {
 
 // ListArticles handles list articles requests
 func (p *ArticleProxy) ListArticles(c *gin.Context) {
-	p.proxyRequest(c, "/articles/articles", nil)
+	p.proxyRequest(c, "/articles", nil)
 }
 
 // ViewArticle handles viewing an article and incrementing view count

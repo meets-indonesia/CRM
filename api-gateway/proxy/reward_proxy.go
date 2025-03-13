@@ -49,36 +49,36 @@ func (p *RewardProxy) ListRewards(c *gin.Context) {
 
 // ClaimReward handles claim reward requests
 func (p *RewardProxy) ClaimReward(c *gin.Context) {
-	p.proxyRequest(c, "/rewards/claims", nil)
+	p.proxyRequest(c, "/claims", nil)
 }
 
 // GetClaim handles get claim by ID requests
 func (p *RewardProxy) GetClaim(c *gin.Context) {
-	p.proxyRequest(c, "/rewards/claims/"+c.Param("id"), nil)
+	p.proxyRequest(c, "/claims/"+c.Param("id"), nil)
 }
 
 // UpdateClaimStatus handles update claim status requests
 func (p *RewardProxy) UpdateClaimStatus(c *gin.Context) {
-	p.proxyRequest(c, "/rewards/claims/"+c.Param("id")+"/status", nil)
+	p.proxyRequest(c, "/claims/"+c.Param("id")+"/status", nil)
 }
 
 // ListUserClaims handles list user claims requests
 func (p *RewardProxy) ListUserClaims(c *gin.Context) {
 	if c.Param("user_id") != "" {
-		p.proxyRequest(c, "/rewards/claims/user/"+c.Param("user_id"), nil)
+		p.proxyRequest(c, "/claims/user/"+c.Param("user_id"), nil)
 	} else {
-		p.proxyRequest(c, "/rewards/claims/user", nil)
+		p.proxyRequest(c, "/claims/user", nil)
 	}
 }
 
 // ListAllClaims handles list all claims requests
 func (p *RewardProxy) ListAllClaims(c *gin.Context) {
-	p.proxyRequest(c, "/rewards/claims", nil)
+	p.proxyRequest(c, "/claims", nil)
 }
 
 // ListClaimsByStatus handles list claims by status requests
 func (p *RewardProxy) ListClaimsByStatus(c *gin.Context) {
-	p.proxyRequest(c, "/rewards/claims/status/"+c.Param("status"), nil)
+	p.proxyRequest(c, "/claims/status/"+c.Param("status"), nil)
 }
 
 // proxyRequest proxies a request to the Reward service

@@ -76,7 +76,6 @@ func Setup(cfg *config.Config) *gin.Engine {
 		admin.GET("/feedbacks", feedbackProxy.ListAllFeedback)
 		admin.GET("/feedbacks/pending", feedbackProxy.ListPendingFeedback)
 		admin.PUT("/feedbacks/:id/respond", feedbackProxy.RespondToFeedback)
-		admin.GET("/feedbacks/user/:user_id", feedbackProxy.ListUserFeedback)
 
 		// Reward management
 		admin.POST("/rewards", rewardProxy.CreateReward)
@@ -130,7 +129,6 @@ func Setup(cfg *config.Config) *gin.Engine {
 
 		// Feedback
 		customer.POST("/feedbacks", feedbackProxy.CreateFeedback)
-		customer.GET("/feedbacks/user", feedbackProxy.ListUserFeedback)
 
 		// Reward
 		customer.POST("/claims", rewardProxy.ClaimReward)
@@ -146,6 +144,8 @@ func Setup(cfg *config.Config) *gin.Engine {
 	authorized.GET("/users/:id", userProxy.GetUser)
 	authorized.GET("/feedbacks/:id", feedbackProxy.GetFeedback)
 	authorized.GET("/notifications/:id", notificationProxy.GetNotification)
+	authorized.GET("/feedbacks/user/:user_id", feedbackProxy.ListUserFeedback)
+	authorized.GET("/feedbacks/user", feedbackProxy.ListUserFeedback)
 
 	// Inventory public routes
 	r.GET("/items", inventoryProxy.ListItems)

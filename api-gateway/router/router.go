@@ -125,7 +125,6 @@ func Setup(cfg *config.Config) *gin.Engine {
 		// Profile
 		// customer.GET("/users/:id", userProxy.GetUser)  // hapus command jika ingin get user data hanya dilakukan oleh user
 		customer.PUT("/users/:id", userProxy.UpdateUser)
-		customer.GET("/users/customer/:id/points", userProxy.GetCustomerPoints)
 
 		// Feedback
 		customer.POST("/feedbacks", feedbackProxy.CreateFeedback)
@@ -146,6 +145,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 	authorized.GET("/notifications/:id", notificationProxy.GetNotification)
 	authorized.GET("/feedbacks/user/:user_id", feedbackProxy.ListUserFeedback)
 	authorized.GET("/feedbacks/user", feedbackProxy.ListUserFeedback)
+	authorized.GET("/users/customer/:id/points", userProxy.GetCustomerPoints)
 
 	// Inventory public routes
 	r.GET("/items", inventoryProxy.ListItems)

@@ -51,6 +51,8 @@ services:
       - SMTP_USER=naufalmuzakki895@gmail.com
       - SMTP_PASSWORD=xxre qhkq kajv qern
       - SMTP_FROM=naufalmuzakki895@gmail.com
+      - GOOGLE_CLIENT_ID=klo web client idny ini 30813765094-lv64iflrevak6seh79p4726qjodim8ti.apps.googleusercontent.com
+      - GOOGLE_CLIENT_SECRET=your_google_client_secret
     depends_on:
       postgres:
         condition: service_healthy

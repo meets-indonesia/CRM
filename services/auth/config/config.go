@@ -59,8 +59,7 @@ type SMTPConfig struct {
 // GoogleAuthConfig untuk konfigurasi Google OAuth
 type GoogleAuthConfig struct {
 	ClientID     string
-	ClientSecret string
-	RedirectURL  string
+	ClientSecret string // Tetap ada untuk kompatibilitas, tapi tidak perlu digunakan
 }
 
 // LoadConfig memuat konfigurasi dari environment atau file
@@ -173,7 +172,6 @@ func LoadConfig() (*Config, error) {
 
 	config.GoogleAuth.ClientID = viper.GetString("google_auth.client_id")
 	config.GoogleAuth.ClientSecret = viper.GetString("google_auth.client_secret")
-	config.GoogleAuth.RedirectURL = viper.GetString("google_auth.redirect_url")
 
 	return &config, nil
 }

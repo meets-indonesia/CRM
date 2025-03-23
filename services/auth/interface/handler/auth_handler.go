@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -126,18 +127,27 @@ func (h *AuthHandler) LoginCustomer(c *gin.Context) {
 
 // LoginWithGoogle handles login with Google OAuth
 func (h *AuthHandler) LoginWithGoogle(c *gin.Context) {
+	// Log request untuk debugging
+	log.Printf("[GoogleAuth] Received login request from IP: %s", c.ClientIP())
+
 	var req entity.GoogleLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("[GoogleAuth] Invalid request: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	// Log panjang token untuk debugging
+	log.Printf("[GoogleAuth] Received token with length: %d", len(req.Token))
+
 	resp, err := h.authUsecase.LoginWithGoogle(c, req)
 	if err != nil {
+		log.Printf("[GoogleAuth] Login failed: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	log.Printf("[GoogleAuth] Login successful for user: %s (ID: %d)", resp.User.Email, resp.User.ID)
 	c.JSON(http.StatusOK, resp)
 }
 

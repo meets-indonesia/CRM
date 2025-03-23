@@ -51,8 +51,10 @@ services:
       - SMTP_USER=naufalmuzakki895@gmail.com
       - SMTP_PASSWORD=xxre qhkq kajv qern
       - SMTP_FROM=naufalmuzakki895@gmail.com
-      - GOOGLE_CLIENT_ID=441262357381-gbvod5hgm9qdloh54nusgj2h3i0ph3hc.apps.googleusercontent.com
-      - GOOGLE_CLIENT_SECRET=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
+      - GOOGLE_WEB_CLIENT_ID=441262357381-gbvod5hgm9qdloh54nusgj2h3i0ph3hc.apps.googleusercontent.com
+      - GOOGLE_ANDROID_CLIENT_ID=30813765094-po43t79lafcbunovoeqgn8mo1n42lbat.apps.googleusercontent.com
+      - GOOGLE_IOS_CLIENT_ID=your_ios_client_id
+      - GOOGLE_REDIRECT_URL=http://localhost:3000/auth/callback/google
     depends_on:
       postgres:
         condition: service_healthy

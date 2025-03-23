@@ -58,8 +58,10 @@ type SMTPConfig struct {
 
 // GoogleAuthConfig untuk konfigurasi Google OAuth
 type GoogleAuthConfig struct {
-	ClientID     string
-	ClientSecret string // Tetap ada untuk kompatibilitas, tapi tidak perlu digunakan
+	WebClientID     string
+	AndroidClientID string
+	IOSClientID     string
+	RedirectURL     string
 }
 
 // LoadConfig memuat konfigurasi dari environment atau file
@@ -96,9 +98,10 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("smtp.password", "")
 	viper.SetDefault("smtp.from", "no-reply@lrt-crm.com")
 
-	viper.SetDefault("google_auth.client_id", "")
-	viper.SetDefault("google_auth.client_secret", "")
-	viper.SetDefault("google_auth.redirect_url", "")
+	viper.SetDefault("oauth.google.web_client_id", "")
+	viper.SetDefault("oauth.google.android_client_id", "")
+	viper.SetDefault("oauth.google.ios_client_id", "")
+	viper.SetDefault("oauth.google.redirect_url", "")
 
 	// Environment variables mapping
 	viper.BindEnv("server.port", "PORT")
@@ -126,9 +129,10 @@ func LoadConfig() (*Config, error) {
 	viper.BindEnv("smtp.password", "SMTP_PASSWORD")
 	viper.BindEnv("smtp.from", "SMTP_FROM")
 
-	viper.BindEnv("google_auth.client_id", "GOOGLE_CLIENT_ID")
-	viper.BindEnv("google_auth.client_secret", "GOOGLE_CLIENT_SECRET")
-	viper.BindEnv("google_auth.redirect_url", "GOOGLE_REDIRECT_URL")
+	viper.BindEnv("oauth.google.web_client_id", "GOOGLE_WEB_CLIENT_ID")
+	viper.BindEnv("oauth.google.android_client_id", "GOOGLE_ANDROID_CLIENT_ID")
+	viper.BindEnv("oauth.google.ios_client_id", "GOOGLE_IOS_CLIENT_ID")
+	viper.BindEnv("oauth.google.redirect_url", "GOOGLE_REDIRECT_URL")
 
 	// Try to read config file if it exists
 	err := viper.ReadInConfig()
@@ -170,8 +174,10 @@ func LoadConfig() (*Config, error) {
 	config.SMTP.Password = viper.GetString("smtp.password")
 	config.SMTP.From = viper.GetString("smtp.from")
 
-	config.GoogleAuth.ClientID = viper.GetString("google_auth.client_id")
-	config.GoogleAuth.ClientSecret = viper.GetString("google_auth.client_secret")
+	config.GoogleAuth.WebClientID = viper.GetString("oauth.google.web_client_id")
+	config.GoogleAuth.AndroidClientID = viper.GetString("oauth.google.android_client_id")
+	config.GoogleAuth.IOSClientID = viper.GetString("oauth.google.ios_client_id")
+	config.GoogleAuth.RedirectURL = viper.GetString("oauth.google.redirect_url")
 
 	return &config, nil
 }

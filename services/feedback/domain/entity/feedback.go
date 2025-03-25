@@ -4,6 +4,16 @@ import (
 	"time"
 )
 
+// Category mendefinisikan kategori feedback
+type Category string
+
+const (
+	CategorySuggestionCriticism Category = "SARAN_KRITIK"
+	CategoryTicketPayment       Category = "PEMBAYARAN_TIKET"
+	CategoryFacilityIssue       Category = "MASALAH_FASILITAS"
+	CategoryServiceComplaint    Category = "KELUHAN_PELAYANAN"
+)
+
 // Status mendefinisikan status feedback
 type Status string
 
@@ -16,8 +26,12 @@ const (
 type Feedback struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
 	UserID    uint      `json:"user_id" gorm:"index;not null"`
+	Category  Category  `json:"category" gorm:"not null"`
+	Station   string    `json:"station" gorm:"not null"`
 	Title     string    `json:"title" gorm:"not null"`
 	Content   string    `json:"content" gorm:"not null"`
+	Rating    uint      `json:"rating" gorm:"not null"`
+	ImagePath string    `json:"image_path,omitempty" gorm:"default:null"`
 	Status    Status    `json:"status" gorm:"not null;default:PENDING"`
 	Response  string    `json:"response,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
@@ -26,8 +40,12 @@ type Feedback struct {
 
 // CreateFeedbackRequest adalah model untuk permintaan pembuatan feedback
 type CreateFeedbackRequest struct {
-	Title   string `json:"title" binding:"required"`
-	Content string `json:"content" binding:"required"`
+	Category Category `json:"category" form:"category" binding:"required"`
+	Station  string   `json:"station" form:"station" binding:"required"`
+	Title    string   `json:"title" form:"title" binding:"required"`
+	Content  string   `json:"content" form:"content" binding:"required"`
+	Rating   uint     `json:"rating" form:"rating" binding:"required,min=1,max=5"`
+	// Image akan dihandle melalui form-data
 }
 
 // RespondFeedbackRequest adalah model untuk permintaan respons feedback

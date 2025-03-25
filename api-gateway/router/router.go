@@ -145,6 +145,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 	authorized.GET("/notifications/:id", notificationProxy.GetNotification)
 	authorized.GET("/feedbacks/user/:user_id", feedbackProxy.ListUserFeedback)
 	authorized.GET("/feedbacks/user", feedbackProxy.ListUserFeedback)
+	authorized.GET("/feedbacks/uploads/:filename", feedbackProxy.AccesUploadImages)
 	authorized.GET("/users/customer/:id/points", userProxy.GetCustomerPoints)
 
 	// Inventory public routes

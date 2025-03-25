@@ -3,9 +3,13 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
+	"mime/multipart"
 
 	"github.com/kevinnaserwan/crm-be/services/feedback/domain/entity"
 	"github.com/kevinnaserwan/crm-be/services/feedback/domain/repository"
+	"github.com/kevinnaserwan/crm-be/services/feedback/infrastructure/email"
+	"github.com/kevinnaserwan/crm-be/services/feedback/infrastructure/filestore"
 )
 
 // Errors
@@ -17,7 +21,7 @@ var (
 
 // FeedbackUsecase mendefinisikan operasi-operasi usecase untuk Feedback
 type FeedbackUsecase interface {
-	CreateFeedback(ctx context.Context, userID uint, req entity.CreateFeedbackRequest) (*entity.Feedback, error)
+	CreateFeedback(ctx context.Context, userID uint, req entity.CreateFeedbackRequest, imageFile *multipart.FileHeader) (*entity.Feedback, error)
 	GetFeedback(ctx context.Context, id uint) (*entity.Feedback, error)
 	RespondFeedback(ctx context.Context, id uint, req entity.RespondFeedbackRequest) (*entity.Feedback, error)
 	ListAllFeedback(ctx context.Context, page, limit int) (*entity.FeedbackListResponse, error)
@@ -28,27 +32,51 @@ type FeedbackUsecase interface {
 type feedbackUsecase struct {
 	feedbackRepo   repository.FeedbackRepository
 	eventPublisher repository.EventPublisher
+	fileService    filestore.FileService
+	emailService   email.EmailService
 }
 
 // NewFeedbackUsecase membuat instance baru FeedbackUsecase
-func NewFeedbackUsecase(feedbackRepo repository.FeedbackRepository, eventPublisher repository.EventPublisher) FeedbackUsecase {
+func NewFeedbackUsecase(
+	feedbackRepo repository.FeedbackRepository,
+	eventPublisher repository.EventPublisher,
+	fileService filestore.FileService,
+	emailService email.EmailService,
+) FeedbackUsecase {
 	return &feedbackUsecase{
 		feedbackRepo:   feedbackRepo,
 		eventPublisher: eventPublisher,
+		fileService:    fileService,
+		emailService:   emailService,
 	}
 }
 
 // CreateFeedback membuat feedback baru
-func (u *feedbackUsecase) CreateFeedback(ctx context.Context, userID uint, req entity.CreateFeedbackRequest) (*entity.Feedback, error) {
+func (u *feedbackUsecase) CreateFeedback(ctx context.Context, userID uint, req entity.CreateFeedbackRequest, imageFile *multipart.FileHeader) (*entity.Feedback, error) {
 	if userID == 0 {
 		return nil, ErrInvalidUserID
 	}
 
+	var imagePath string
+	var err error
+
+	// Handle file upload if provided
+	if imageFile != nil {
+		imagePath, err = u.fileService.UploadFile(imageFile)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	feedback := &entity.Feedback{
-		UserID:  userID,
-		Title:   req.Title,
-		Content: req.Content,
-		Status:  entity.StatusPending,
+		UserID:    userID,
+		Category:  req.Category,
+		Station:   req.Station,
+		Title:     req.Title,
+		Content:   req.Content,
+		Rating:    req.Rating,
+		ImagePath: imagePath,
+		Status:    entity.StatusPending,
 	}
 
 	if err := u.feedbackRepo.Create(ctx, feedback); err != nil {
@@ -59,6 +87,20 @@ func (u *feedbackUsecase) CreateFeedback(ctx context.Context, userID uint, req e
 	if err := u.eventPublisher.PublishFeedbackCreated(feedback); err != nil {
 		// Log error but don't fail
 	}
+
+	// Send notification email to admin
+	subject := fmt.Sprintf("New Feedback: %s", feedback.Title)
+	body := fmt.Sprintf(
+		"New feedback has been submitted.\n\n"+
+			"Category: %s\n"+
+			"Station: %s\n"+
+			"Title: %s\n"+
+			"Content: %s\n"+
+			"Rating: %d/5\n\n"+
+			"Please check the admin panel for more details.",
+		feedback.Category, feedback.Station, feedback.Title, feedback.Content, feedback.Rating)
+
+	go u.emailService.SendNotification(subject, body)
 
 	return feedback, nil
 }
@@ -107,13 +149,6 @@ func (u *feedbackUsecase) RespondFeedback(ctx context.Context, id uint, req enti
 
 // ListAllFeedback mendapatkan semua feedback
 func (u *feedbackUsecase) ListAllFeedback(ctx context.Context, page, limit int) (*entity.FeedbackListResponse, error) {
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 || limit > 100 {
-		limit = 10
-	}
-
 	feedbacks, total, err := u.feedbackRepo.ListAll(ctx, page, limit)
 	if err != nil {
 		return nil, err
@@ -133,13 +168,6 @@ func (u *feedbackUsecase) ListUserFeedback(ctx context.Context, userID uint, pag
 		return nil, ErrInvalidUserID
 	}
 
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 || limit > 100 {
-		limit = 10
-	}
-
 	feedbacks, total, err := u.feedbackRepo.ListByUserID(ctx, userID, page, limit)
 	if err != nil {
 		return nil, err
@@ -155,13 +183,6 @@ func (u *feedbackUsecase) ListUserFeedback(ctx context.Context, userID uint, pag
 
 // ListPendingFeedback mendapatkan feedback yang belum direspons
 func (u *feedbackUsecase) ListPendingFeedback(ctx context.Context, page, limit int) (*entity.FeedbackListResponse, error) {
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 || limit > 100 {
-		limit = 10
-	}
-
 	feedbacks, total, err := u.feedbackRepo.ListByStatus(ctx, entity.StatusPending, page, limit)
 	if err != nil {
 		return nil, err

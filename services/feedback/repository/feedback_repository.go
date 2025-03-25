@@ -49,19 +49,15 @@ func (r *GormFeedbackRepository) Update(ctx context.Context, feedback *entity.Fe
 func (r *GormFeedbackRepository) ListAll(ctx context.Context, page, limit int) ([]entity.Feedback, int64, error) {
 	var feedbacks []entity.Feedback
 	var total int64
-
 	offset := (page - 1) * limit
-
 	// Count total
 	if err := r.db.Model(&entity.Feedback{}).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-
 	// Get feedbacks
 	if err := r.db.Order("created_at DESC").Offset(offset).Limit(limit).Find(&feedbacks).Error; err != nil {
 		return nil, 0, err
 	}
-
 	return feedbacks, total, nil
 }
 
@@ -69,19 +65,15 @@ func (r *GormFeedbackRepository) ListAll(ctx context.Context, page, limit int) (
 func (r *GormFeedbackRepository) ListByUserID(ctx context.Context, userID uint, page, limit int) ([]entity.Feedback, int64, error) {
 	var feedbacks []entity.Feedback
 	var total int64
-
 	offset := (page - 1) * limit
-
 	// Count total
 	if err := r.db.Model(&entity.Feedback{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-
 	// Get feedbacks
 	if err := r.db.Where("user_id = ?", userID).Order("created_at DESC").Offset(offset).Limit(limit).Find(&feedbacks).Error; err != nil {
 		return nil, 0, err
 	}
-
 	return feedbacks, total, nil
 }
 
@@ -89,18 +81,14 @@ func (r *GormFeedbackRepository) ListByUserID(ctx context.Context, userID uint, 
 func (r *GormFeedbackRepository) ListByStatus(ctx context.Context, status entity.Status, page, limit int) ([]entity.Feedback, int64, error) {
 	var feedbacks []entity.Feedback
 	var total int64
-
 	offset := (page - 1) * limit
-
 	// Count total
 	if err := r.db.Model(&entity.Feedback{}).Where("status = ?", status).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-
 	// Get feedbacks
 	if err := r.db.Where("status = ?", status).Order("created_at DESC").Offset(offset).Limit(limit).Find(&feedbacks).Error; err != nil {
 		return nil, 0, err
 	}
-
 	return feedbacks, total, nil
 }

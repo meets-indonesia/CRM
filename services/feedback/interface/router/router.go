@@ -8,10 +8,10 @@ import (
 )
 
 // Setup initializes the router
+// Setup initializes the router
 func Setup(cfg *config.Config, feedbackHandler *handler.FeedbackHandler) *gin.Engine {
 	// Set Gin mode
 	gin.SetMode(cfg.Server.Mode)
-
 	// Create a new Gin router
 	r := gin.New()
 	r.Use(gin.Logger())
@@ -22,6 +22,9 @@ func Setup(cfg *config.Config, feedbackHandler *handler.FeedbackHandler) *gin.En
 		c.Set("config", cfg)
 		c.Next()
 	})
+
+	// Serve static files untuk gambar feedback
+	r.Static("/uploads", cfg.FileStore.UploadDir)
 
 	// Health check endpoint
 	r.GET("/health", feedbackHandler.HealthCheck)

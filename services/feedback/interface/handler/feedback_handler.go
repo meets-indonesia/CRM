@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"mime/multipart"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kevinnaserwan/crm-be/services/feedback/domain/entity"
 	"github.com/kevinnaserwan/crm-be/services/feedback/domain/usecase"
+	"github.com/kevinnaserwan/crm-be/services/feedback/infrastructure/filestore"
 )
 
 // FeedbackHandler handles feedback requests
@@ -30,16 +32,32 @@ func (h *FeedbackHandler) CreateFeedback(c *gin.Context) {
 		return
 	}
 
+	// Parse form data
 	var req entity.CreateFeedbackRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	feedback, err := h.feedbackUsecase.CreateFeedback(c, userID.(uint), req)
+	// Get image file if uploaded
+	var imageFile *multipart.FileHeader
+	file, err := c.FormFile("image")
+	if err == nil {
+		imageFile = file
+	}
+
+	feedback, err := h.feedbackUsecase.CreateFeedback(c, userID.(uint), req, imageFile)
 	if err != nil {
 		if err == usecase.ErrInvalidUserID {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+			return
+		}
+		if err == filestore.ErrFileTooLarge {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Image file size exceeds 5MB limit"})
+			return
+		}
+		if err == filestore.ErrInvalidFileType {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type, only images are allowed"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -109,6 +127,14 @@ func (h *FeedbackHandler) ListAllFeedback(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
+	// Validasi page dan limit
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+
 	feedbacks, err := h.feedbackUsecase.ListAllFeedback(c, page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -145,6 +171,14 @@ func (h *FeedbackHandler) ListUserFeedback(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
+	// Validasi page dan limit
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+
 	feedbacks, err := h.feedbackUsecase.ListUserFeedback(c, userID, page, limit)
 	if err != nil {
 		if err == usecase.ErrInvalidUserID {
@@ -163,6 +197,14 @@ func (h *FeedbackHandler) ListPendingFeedback(c *gin.Context) {
 	// Parse pagination parameters
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+
+	// Validasi page dan limit
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
 
 	feedbacks, err := h.feedbackUsecase.ListPendingFeedback(c, page, limit)
 	if err != nil {

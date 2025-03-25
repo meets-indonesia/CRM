@@ -8,6 +8,8 @@ import (
 	"github.com/kevinnaserwan/crm-be/services/feedback/config"
 	"github.com/kevinnaserwan/crm-be/services/feedback/domain/usecase"
 	"github.com/kevinnaserwan/crm-be/services/feedback/infrastructure/db"
+	"github.com/kevinnaserwan/crm-be/services/feedback/infrastructure/email"
+	"github.com/kevinnaserwan/crm-be/services/feedback/infrastructure/filestore"
 	"github.com/kevinnaserwan/crm-be/services/feedback/infrastructure/messaging"
 	"github.com/kevinnaserwan/crm-be/services/feedback/interface/handler"
 	"github.com/kevinnaserwan/crm-be/services/feedback/interface/router"
@@ -34,11 +36,24 @@ func main() {
 	}
 	defer rabbitMQ.Close()
 
+	// Setup file service
+	fileService := filestore.NewLocalFileService(cfg.FileStore.UploadDir, cfg.FileStore.MaxSize)
+
+	// Setup email service
+	emailService := email.NewSMTPEmailService(
+		cfg.Email.Host,
+		cfg.Email.Port,
+		cfg.Email.Username,
+		cfg.Email.Password,
+		cfg.Email.From,
+		cfg.Email.AdminEmail,
+	)
+
 	// Setup repositories
 	feedbackRepo := repository.NewGormFeedbackRepository(database)
 
 	// Setup usecase
-	feedbackUsecase := usecase.NewFeedbackUsecase(feedbackRepo, rabbitMQ)
+	feedbackUsecase := usecase.NewFeedbackUsecase(feedbackRepo, rabbitMQ, fileService, emailService)
 
 	// Setup handler
 	feedbackHandler := handler.NewFeedbackHandler(feedbackUsecase)
@@ -62,6 +77,13 @@ func main() {
 		c.Set("config", cfg)
 		c.Next()
 	})
+
+	// Create upload directory if it doesn't exist
+	if _, err := os.Stat(cfg.FileStore.UploadDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(cfg.FileStore.UploadDir, 0755); err != nil {
+			log.Fatalf("Failed to create upload directory: %v", err)
+		}
+	}
 
 	// Setup router
 	router := router.Setup(cfg, feedbackHandler)

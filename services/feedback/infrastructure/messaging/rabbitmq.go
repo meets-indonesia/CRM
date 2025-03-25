@@ -27,18 +27,15 @@ func NewRabbitMQ(config config.RabbitMQConfig) (*RabbitMQ, error) {
 	// Connect to RabbitMQ
 	url := fmt.Sprintf("amqp://%s:%s@%s:%s/",
 		config.User, config.Password, config.Host, config.Port)
-
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, err
 	}
-
 	ch, err := conn.Channel()
 	if err != nil {
 		conn.Close()
 		return nil, err
 	}
-
 	// Declare exchange
 	err = ch.ExchangeDeclare(
 		config.Exchange, // name
@@ -54,7 +51,6 @@ func NewRabbitMQ(config config.RabbitMQConfig) (*RabbitMQ, error) {
 		conn.Close()
 		return nil, err
 	}
-
 	return &RabbitMQ{
 		conn:     conn,
 		channel:  ch,
@@ -67,10 +63,13 @@ func (r *RabbitMQ) PublishFeedbackCreated(feedback *entity.Feedback) error {
 	event := map[string]interface{}{
 		"feedback_id": feedback.ID,
 		"user_id":     feedback.UserID,
+		"category":    feedback.Category,
+		"station":     feedback.Station,
 		"title":       feedback.Title,
+		"rating":      feedback.Rating,
+		"image_path":  feedback.ImagePath,
 		"created_at":  feedback.CreatedAt,
 	}
-
 	return r.publishEvent(EventFeedbackCreated, event)
 }
 
@@ -79,11 +78,13 @@ func (r *RabbitMQ) PublishFeedbackResponded(feedback *entity.Feedback) error {
 	event := map[string]interface{}{
 		"feedback_id":  feedback.ID,
 		"user_id":      feedback.UserID,
+		"category":     feedback.Category,
+		"station":      feedback.Station,
 		"title":        feedback.Title,
+		"rating":       feedback.Rating,
 		"response":     feedback.Response,
 		"responded_at": feedback.UpdatedAt,
 	}
-
 	return r.publishEvent(EventFeedbackResponded, event)
 }
 
@@ -93,7 +94,6 @@ func (r *RabbitMQ) publishEvent(eventType string, payload interface{}) error {
 	if err != nil {
 		return err
 	}
-
 	return r.channel.Publish(
 		r.exchange, // exchange
 		eventType,  // routing key

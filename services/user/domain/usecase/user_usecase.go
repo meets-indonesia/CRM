@@ -330,10 +330,9 @@ func (u *userUsecase) ProcessRewardClaimed(userID uint, rewardID uint, points in
 		return ErrUserNotFound
 	}
 
-	// Deduct points (negative amount)
 	transaction := &entity.PointTransaction{
 		UserID:      userID,
-		Amount:      -points, // Negative for deduction
+		Amount:      0, // Negative for deduction
 		Type:        "reward",
 		Description: "Points used for claiming reward",
 		CreatedAt:   time.Now(),

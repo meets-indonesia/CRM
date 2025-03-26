@@ -1,6 +1,9 @@
 package router
 
 import (
+	"io"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/kevinnaserwan/crm-be/api-gateway/config"
 	"github.com/kevinnaserwan/crm-be/api-gateway/middleware"
@@ -35,6 +38,54 @@ func Setup(cfg *config.Config) *gin.Engine {
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
+	})
+
+	// Serve static files from Article service
+	r.GET("article/uploads/*filepath", func(c *gin.Context) {
+		targetURL := cfg.Services.ArticleURL + c.Request.URL.Path
+		resp, err := http.Get(targetURL)
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to fetch image from article service"})
+			return
+		}
+		defer resp.Body.Close()
+
+		// Copy content type
+		for key, values := range resp.Header {
+			for _, value := range values {
+				c.Header(key, value)
+			}
+		}
+		c.Status(resp.StatusCode)
+
+		// Stream image
+		io.Copy(c.Writer, resp.Body)
+	})
+
+	r.GET("/feedbacks/uploads/*filepath", func(c *gin.Context) {
+		// Ambil hanya path file
+		filepath := c.Param("filepath") // contoh: /17429xxx.png
+
+		// Bangun ulang path yang sesuai di service backend
+		targetURL := cfg.Services.FeedbackURL + "/uploads" + filepath
+
+		resp, err := http.Get(targetURL)
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to fetch image from feedback service"})
+			return
+		}
+		defer resp.Body.Close()
+
+		// Salin content-type & status
+		for key, values := range resp.Header {
+			for _, value := range values {
+				c.Header(key, value)
+			}
+		}
+		c.Status(resp.StatusCode)
+
+		// Stream response
+		io.Copy(c.Writer, resp.Body)
 	})
 
 	// Auth routes
@@ -145,7 +196,6 @@ func Setup(cfg *config.Config) *gin.Engine {
 	authorized.GET("/notifications/:id", notificationProxy.GetNotification)
 	authorized.GET("/feedbacks/user/:user_id", feedbackProxy.ListUserFeedback)
 	authorized.GET("/feedbacks/user", feedbackProxy.ListUserFeedback)
-	authorized.GET("/feedbacks/uploads/:filename", feedbackProxy.AccesUploadImages)
 	authorized.GET("/users/customer/:id/points", userProxy.GetCustomerPoints)
 
 	// Inventory public routes

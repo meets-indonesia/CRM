@@ -23,17 +23,36 @@ func NewArticleHandler(articleUsecase usecase.ArticleUsecase) *ArticleHandler {
 
 // CreateArticle handles create article requests
 func (h *ArticleHandler) CreateArticle(c *gin.Context) {
-	// Get user ID from token
 	authorID, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	var req entity.CreateArticleRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	// Multipart form
+	title := c.PostForm("title")
+	content := c.PostForm("content")
+	summary := c.PostForm("summary")
+	isPublished, _ := strconv.ParseBool(c.PostForm("is_published"))
+
+	// File upload
+	file, err := c.FormFile("image")
+	var imageURL string
+	if err == nil {
+		path := "uploads/" + file.Filename
+		if err := c.SaveUploadedFile(file, path); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
+			return
+		}
+		imageURL = "/" + path
+	}
+
+	req := entity.CreateArticleRequest{
+		Title:       title,
+		Content:     content,
+		Summary:     summary,
+		ImageURL:    imageURL,
+		IsPublished: isPublished,
 	}
 
 	article, err := h.articleUsecase.CreateArticle(c, authorID.(uint), req)

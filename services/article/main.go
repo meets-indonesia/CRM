@@ -56,6 +56,8 @@ func main() {
 	// Setup router
 	router := router.Setup(cfg, articleHandler)
 
+	router.Static("/uploads", "./uploads")
+
 	// Start server
 	port := os.Getenv("PORT")
 	if port == "" {

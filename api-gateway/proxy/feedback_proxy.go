@@ -59,7 +59,7 @@ func (p *FeedbackProxy) ListPendingFeedback(c *gin.Context) {
 
 // AccesUploadImages handles accessing uploaded images
 func (p *FeedbackProxy) AccesUploadImages(c *gin.Context) {
-	path := "/uploads/" + c.Query("filename")
+	path := "feedbacks/uploads/" + c.Query("filename")
 	p.proxyRequest(c, path, nil)
 }
 

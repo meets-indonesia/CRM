@@ -41,26 +41,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 	})
 
 	// Serve static files from Article service
-	r.GET("article/uploads/*filepath", func(c *gin.Context) {
-		targetURL := cfg.Services.ArticleURL + c.Request.URL.Path
-		resp, err := http.Get(targetURL)
-		if err != nil {
-			c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to fetch image from article service"})
-			return
-		}
-		defer resp.Body.Close()
-
-		// Copy content type
-		for key, values := range resp.Header {
-			for _, value := range values {
-				c.Header(key, value)
-			}
-		}
-		c.Status(resp.StatusCode)
-
-		// Stream image
-		io.Copy(c.Writer, resp.Body)
-	})
+	r.GET("/article/uploads/*filepath", articleProxy.AccessUploadImages)
 
 	r.GET("/feedbacks/uploads/*filepath", func(c *gin.Context) {
 		// Ambil hanya path file
@@ -85,6 +66,30 @@ func Setup(cfg *config.Config) *gin.Engine {
 		c.Status(resp.StatusCode)
 
 		// Stream response
+		io.Copy(c.Writer, resp.Body)
+	})
+
+	// Serve reward uploads directly from reward service
+	r.GET("/uploads/*filepath", func(c *gin.Context) {
+		filepath := c.Param("filepath")
+		targetURL := cfg.Services.RewardURL + "/uploads" + filepath
+
+		resp, err := http.Get(targetURL)
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to fetch image from reward service"})
+			return
+		}
+		defer resp.Body.Close()
+
+		// Copy headers
+		for key, values := range resp.Header {
+			for _, value := range values {
+				c.Header(key, value)
+			}
+		}
+		c.Status(resp.StatusCode)
+
+		// Stream content
 		io.Copy(c.Writer, resp.Body)
 	})
 

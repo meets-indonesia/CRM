@@ -88,17 +88,51 @@ func (h *ArticleHandler) GetArticle(c *gin.Context) {
 
 // UpdateArticle handles update article requests
 func (h *ArticleHandler) UpdateArticle(c *gin.Context) {
-	// Parse ID parameter
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid article ID"})
 		return
 	}
 
+	title := c.PostForm("title")
+	content := c.PostForm("content")
+	summary := c.PostForm("summary")
+	isPublishedStr := c.PostForm("is_published")
+	var isPublished *bool
+	if isPublishedStr != "" {
+		val, err := strconv.ParseBool(isPublishedStr)
+		if err == nil {
+			isPublished = &val
+		}
+	}
+
+	file, err := c.FormFile("image")
+	var imageURL *string
+	if err == nil {
+		path := "uploads/" + file.Filename
+		if err := c.SaveUploadedFile(file, path); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
+			return
+		}
+		fullPath := "/" + path
+		imageURL = &fullPath
+	}
+
 	var req entity.UpdateArticleRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	if title != "" {
+		req.Title = &title
+	}
+	if content != "" {
+		req.Content = &content
+	}
+	if summary != "" {
+		req.Summary = &summary
+	}
+	if imageURL != nil {
+		req.ImageURL = imageURL
+	}
+	if isPublished != nil {
+		req.IsPublished = isPublished
 	}
 
 	article, err := h.articleUsecase.UpdateArticle(c, uint(id), req)

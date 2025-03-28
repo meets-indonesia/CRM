@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kevinnaserwan/crm-be/services/reward/domain/entity"
@@ -24,9 +26,27 @@ func NewRewardHandler(rewardUsecase usecase.RewardUsecase) *RewardHandler {
 // CreateReward handles create reward requests
 func (h *RewardHandler) CreateReward(c *gin.Context) {
 	var req entity.CreateRewardRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+
+	// Baca form field
+	req.Name = c.PostForm("name")
+	req.Description = c.PostForm("description")
+	pointCost, _ := strconv.Atoi(c.PostForm("point_cost"))
+	stock, _ := strconv.Atoi(c.PostForm("stock"))
+	req.PointCost = pointCost
+	req.Stock = stock
+
+	// Handle image upload
+	file, err := c.FormFile("image")
+	if err == nil {
+		// Simpan file ke folder tertentu di server
+		filename := fmt.Sprintf("uploads/%d_%s", time.Now().Unix(), file.Filename)
+		if err := c.SaveUploadedFile(file, filename); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
+			return
+		}
+
+		// Set URL/Path gambar
+		req.ImageURL = "/" + filename
 	}
 
 	reward, err := h.rewardUsecase.CreateReward(c, req)
@@ -61,6 +81,7 @@ func (h *RewardHandler) GetReward(c *gin.Context) {
 }
 
 // UpdateReward handles update reward requests
+// UpdateReward handles update reward requests
 func (h *RewardHandler) UpdateReward(c *gin.Context) {
 	// Parse ID parameter
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -69,12 +90,64 @@ func (h *RewardHandler) UpdateReward(c *gin.Context) {
 		return
 	}
 
-	var req entity.UpdateRewardRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	// Ambil form field
+	name := c.PostForm("name")
+	description := c.PostForm("description")
+	pointCostStr := c.PostForm("point_cost")
+	stockStr := c.PostForm("stock")
+	isActiveStr := c.PostForm("is_active")
+
+	var pointCost, stock int
+	if pointCostStr != "" {
+		pointCost, _ = strconv.Atoi(pointCostStr)
+	}
+	if stockStr != "" {
+		stock, _ = strconv.Atoi(stockStr)
 	}
 
+	var isActive *bool
+	if isActiveStr != "" {
+		val, err := strconv.ParseBool(isActiveStr)
+		if err == nil {
+			isActive = &val
+		}
+	}
+
+	// Handle image (jika ada file)
+	file, err := c.FormFile("image")
+	var imageURL string
+	if err == nil {
+		filename := fmt.Sprintf("uploads/%d_%s", time.Now().Unix(), file.Filename)
+		if err := c.SaveUploadedFile(file, filename); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
+			return
+		}
+		imageURL = "/" + filename
+	}
+
+	// Bangun request
+	req := entity.UpdateRewardRequest{}
+
+	if name != "" {
+		req.Name = name
+	}
+	if description != "" {
+		req.Description = description
+	}
+	if pointCost > 0 {
+		req.PointCost = pointCost
+	}
+	if stock >= 0 {
+		req.Stock = stock
+	}
+	if imageURL != "" {
+		req.ImageURL = imageURL
+	}
+	if isActive != nil {
+		req.IsActive = isActive
+	}
+
+	// Panggil usecase
 	reward, err := h.rewardUsecase.UpdateReward(c, uint(id), req)
 	if err != nil {
 		if err == usecase.ErrRewardNotFound {

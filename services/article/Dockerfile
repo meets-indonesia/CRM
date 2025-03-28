@@ -6,7 +6,7 @@ RUN go build -o article main.go
 
 FROM alpine:latest
 WORKDIR /app
+RUN mkdir -p /app/uploads
 COPY --from=builder /app/article .
-COPY --from=builder /app/uploads ./uploads
 EXPOSE 8086
 CMD ["./article"]

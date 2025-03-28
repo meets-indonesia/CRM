@@ -162,7 +162,7 @@ func (u *rewardUsecase) ListRewards(ctx context.Context, activeOnly bool, page, 
 
 // ClaimReward mengklaim reward
 func (u *rewardUsecase) ClaimReward(ctx context.Context, userID uint, req entity.ClaimRewardRequest) (*entity.RewardClaim, error) {
-	// Check if reward exists and is active
+	// Ambil reward
 	reward, err := u.rewardRepo.FindByID(ctx, req.RewardID)
 	if err != nil {
 		return nil, err
@@ -171,7 +171,7 @@ func (u *rewardUsecase) ClaimReward(ctx context.Context, userID uint, req entity
 		return nil, ErrRewardNotFound
 	}
 
-	// Check stock
+	// Cek stok
 	stock, err := u.rewardRepo.CheckStock(ctx, req.RewardID)
 	if err != nil {
 		return nil, err
@@ -180,7 +180,7 @@ func (u *rewardUsecase) ClaimReward(ctx context.Context, userID uint, req entity
 		return nil, ErrInsufficientStock
 	}
 
-	// Check user points
+	// Cek poin pengguna
 	userPoints, err := u.userPointService.CheckUserPoints(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -189,7 +189,23 @@ func (u *rewardUsecase) ClaimReward(ctx context.Context, userID uint, req entity
 		return nil, ErrInsufficientPoints
 	}
 
-	// Create claim
+	// Tentukan level reward berdasarkan PointCost reward
+	rewardLevel := getRewardLevel(reward.PointCost)
+
+	// Ambil semua klaim user
+	existingClaims, _, err := u.claimRepo.ListByUserID(ctx, userID, 1, 1000)
+	if err != nil {
+		return nil, err
+	}
+
+	// Cek apakah user sudah klaim reward di level tersebut
+	for _, claim := range existingClaims {
+		if getRewardLevel(claim.PointCost) == rewardLevel {
+			return nil, errors.New("Anda sudah mengklaim reward pada level ini")
+		}
+	}
+
+	// Lanjut buat klaim
 	claim := &entity.RewardClaim{
 		UserID:    userID,
 		RewardID:  req.RewardID,
@@ -202,15 +218,13 @@ func (u *rewardUsecase) ClaimReward(ctx context.Context, userID uint, req entity
 		return nil, err
 	}
 
-	// Decrease stock
+	// Kurangi stok
 	if err := u.rewardRepo.DecreaseStock(ctx, req.RewardID, 1); err != nil {
 		return nil, err
 	}
 
-	// Publish event
-	if err := u.eventPublisher.PublishRewardClaimed(claim); err != nil {
-		// Log error but don't fail
-	}
+	// Kirim event (tidak blocking meski error)
+	_ = u.eventPublisher.PublishRewardClaimed(claim)
 
 	return claim, nil
 }
@@ -342,5 +356,18 @@ func isValidStatusTransition(from, to entity.ClaimStatus) bool {
 		return to == entity.ClaimStatusCancelled
 	default:
 		return false
+	}
+}
+
+func getRewardLevel(point int) string {
+	switch {
+	case point >= 200:
+		return "PLATINUM"
+	case point >= 100:
+		return "GOLD"
+	case point >= 50:
+		return "SILVER"
+	default:
+		return "BRONZE"
 	}
 }

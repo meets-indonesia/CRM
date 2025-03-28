@@ -25,6 +25,7 @@ func Setup(cfg *config.Config, rewardHandler *handler.RewardHandler) *gin.Engine
 
 	// Health check endpoint
 	r.GET("/health", rewardHandler.HealthCheck)
+	r.Static("/uploads", "./uploads")
 
 	// Reward endpoints
 	rewards := r.Group("/rewards")

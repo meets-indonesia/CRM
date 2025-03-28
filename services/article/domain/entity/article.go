@@ -30,11 +30,11 @@ type CreateArticleRequest struct {
 
 // UpdateArticleRequest adalah model untuk permintaan update artikel
 type UpdateArticleRequest struct {
-	Title       string `json:"title,omitempty"`
-	Content     string `json:"content,omitempty"`
-	Summary     string `json:"summary,omitempty"`
-	ImageURL    string `json:"image_url,omitempty"`
-	IsPublished *bool  `json:"is_published,omitempty"`
+	Title       *string `json:"title,omitempty"`
+	Content     *string `json:"content,omitempty"`
+	Summary     *string `json:"summary,omitempty"`
+	ImageURL    *string `json:"image_url,omitempty"`
+	IsPublished *bool   `json:"is_published,omitempty"`
 }
 
 // ArticleListResponse adalah model respons untuk daftar artikel

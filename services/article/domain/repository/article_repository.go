@@ -15,6 +15,7 @@ type ArticleRepository interface {
 	List(ctx context.Context, publishedOnly bool, page, limit int) ([]entity.Article, int64, error)
 	IncrementViewCount(ctx context.Context, id uint) error
 	Search(ctx context.Context, query string, publishedOnly bool, page, limit int) ([]entity.Article, int64, error)
+	PartialUpdate(ctx context.Context, id uint, data map[string]interface{}) error
 }
 
 // EventPublisher mendefinisikan operasi-operasi untuk mempublikasikan event

@@ -94,49 +94,39 @@ func (u *articleUsecase) UpdateArticle(ctx context.Context, id uint, req entity.
 		return nil, ErrArticleNotFound
 	}
 
-	// Cek apakah sebelumnya artikel belum dipublish
-	wasPublished := article.IsPublished
+	updateData := make(map[string]interface{})
 
-	// Update fields
-	if req.Title != "" {
-		article.Title = req.Title
+	if req.Title != nil {
+		updateData["title"] = *req.Title
 	}
-	if req.Content != "" {
-		article.Content = req.Content
+	if req.Content != nil {
+		updateData["content"] = *req.Content
 	}
-	if req.Summary != "" {
-		article.Summary = req.Summary
+	if req.Summary != nil {
+		updateData["summary"] = *req.Summary
 	}
-	if req.ImageURL != "" {
-		article.ImageURL = req.ImageURL
+	if req.ImageURL != nil {
+		updateData["image_url"] = *req.ImageURL
 	}
 	if req.IsPublished != nil {
-		article.IsPublished = *req.IsPublished
-
-		// Jika artikel baru dipublish, set PublishedAt
-		if *req.IsPublished && !wasPublished {
+		updateData["is_published"] = *req.IsPublished
+		if *req.IsPublished {
 			now := time.Now()
-			article.PublishedAt = &now
+			updateData["published_at"] = &now
+		} else {
+			updateData["published_at"] = nil
 		}
 	}
 
-	if err := u.articleRepo.Update(ctx, article); err != nil {
+	if len(updateData) == 0 {
+		return article, nil // Tidak ada yang perlu di-update
+	}
+
+	if err := u.articleRepo.PartialUpdate(ctx, id, updateData); err != nil {
 		return nil, err
 	}
 
-	// Publish event jika artikel baru saja dipublish
-	if article.IsPublished && !wasPublished {
-		if err := u.eventPublisher.PublishArticleCreated(article); err != nil {
-			// Log error but don't fail
-		}
-	} else if article.IsPublished {
-		// Publish update event jika artikel sudah dipublish sebelumnya
-		if err := u.eventPublisher.PublishArticleUpdated(article); err != nil {
-			// Log error but don't fail
-		}
-	}
-
-	return article, nil
+	return u.articleRepo.FindByID(ctx, id)
 }
 
 // DeleteArticle menghapus artikel

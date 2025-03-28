@@ -26,6 +26,8 @@ func Setup(cfg *config.Config, articleHandler *handler.ArticleHandler) *gin.Engi
 	// Health check endpoint
 	r.GET("/health", articleHandler.HealthCheck)
 
+	r.Static("/uploads", "./uploads")
+
 	// Article endpoints
 	articles := r.Group("/articles")
 	{

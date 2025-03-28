@@ -45,6 +45,10 @@ func (r *GormArticleRepository) Update(ctx context.Context, article *entity.Arti
 	return result.Error
 }
 
+func (r *GormArticleRepository) PartialUpdate(ctx context.Context, id uint, data map[string]interface{}) error {
+	return r.db.Model(&entity.Article{}).Where("id = ?", id).Updates(data).Error
+}
+
 // Delete deletes an article
 func (r *GormArticleRepository) Delete(ctx context.Context, id uint) error {
 	result := r.db.Delete(&entity.Article{}, id)

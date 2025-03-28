@@ -24,7 +24,38 @@ func NewArticleProxy(baseURL string) *ArticleProxy {
 
 // CreateArticle handles create article requests
 func (p *ArticleProxy) CreateArticle(c *gin.Context) {
-	p.proxyRequest(c, "/articles", nil)
+	targetURL := p.baseURL + "/articles"
+
+	// Batasi ukuran upload (optional)
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 10<<20) // max 10MB
+
+	// Buat request baru ke service article
+	req, err := http.NewRequest("POST", targetURL, c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create proxy request"})
+		return
+	}
+
+	// Salin semua header dari request original
+	req.Header = c.Request.Header
+
+	// Kirim request ke service article
+	resp, err := p.client.Do(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to forward to article service"})
+		return
+	}
+	defer resp.Body.Close()
+
+	// Salin semua header response dari service
+	for key, values := range resp.Header {
+		for _, value := range values {
+			c.Header(key, value)
+		}
+	}
+	c.Status(resp.StatusCode)
+
+	io.Copy(c.Writer, resp.Body)
 }
 
 // GetArticle handles get article by ID requests
@@ -124,4 +155,38 @@ func (p *ArticleProxy) proxyRequest(c *gin.Context, path string, transformReques
 	// Set the status code and write the response body
 	c.Status(resp.StatusCode)
 	c.Writer.Write(respBody)
+}
+
+// AccessUploadImages handles accessing uploaded images from article service
+func (p *ArticleProxy) AccessUploadImages(c *gin.Context) {
+	filepath := c.Param("filepath")
+	targetURL := p.baseURL + "/uploads" + filepath
+
+	req, err := http.NewRequest("GET", targetURL, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request to article service"})
+		return
+	}
+
+	// Copy headers from the original request (optional)
+	for key, values := range c.Request.Header {
+		for _, value := range values {
+			req.Header.Add(key, value)
+		}
+	}
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to fetch image from article service"})
+		return
+	}
+	defer resp.Body.Close()
+
+	for key, values := range resp.Header {
+		for _, value := range values {
+			c.Header(key, value)
+		}
+	}
+	c.Status(resp.StatusCode)
+	io.Copy(c.Writer, resp.Body)
 }

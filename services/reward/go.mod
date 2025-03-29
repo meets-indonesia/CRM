@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/gin-gonic/gin v1.10.0
-	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/spf13/viper v1.19.0
 	github.com/streadway/amqp v1.1.0
 	gorm.io/driver/postgres v1.5.11

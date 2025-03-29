@@ -51,12 +51,15 @@ func main() {
 
 	// Setup repositories
 	feedbackRepo := repository.NewGormFeedbackRepository(database)
+	qrFeedbackRepo := repository.NewGormQRFeedbackRepository(database)
 
-	// Setup usecase
+	// Setup usecases
 	feedbackUsecase := usecase.NewFeedbackUsecase(feedbackRepo, rabbitMQ, fileService, emailService)
+	qrFeedbackUsecase := usecase.NewQRFeedbackUsecase(qrFeedbackRepo, fileService)
 
-	// Setup handler
+	// Setup handlers
 	feedbackHandler := handler.NewFeedbackHandler(feedbackUsecase)
+	qrFeedbackHandler := handler.NewQRFeedbackHandler(qrFeedbackUsecase)
 
 	// Setup subscriber
 	subscriber, err := messaging.NewRabbitMQSubscriber(cfg.RabbitMQ, feedbackUsecase)
@@ -85,15 +88,14 @@ func main() {
 		}
 	}
 
-	// Setup router
-	router := router.Setup(cfg, feedbackHandler)
+	// Setup router with both handlers
+	router := router.Setup(cfg, feedbackHandler, qrFeedbackHandler)
 
 	// Start server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = cfg.Server.Port
 	}
-
 	log.Printf("Feedback Service starting on port %s", port)
 	router.Run(":" + port)
 }

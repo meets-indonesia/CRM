@@ -22,7 +22,7 @@ func NewPostgresDB(config config.DatabaseConfig) (*gorm.DB, error) {
 	}
 
 	// Auto migrate the schema
-	if err := db.AutoMigrate(&entity.Feedback{}); err != nil {
+	if err := db.AutoMigrate(&entity.Feedback{}, &entity.QRFeedback{}); err != nil {
 		return nil, err
 	}
 

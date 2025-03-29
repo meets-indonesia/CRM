@@ -48,6 +48,38 @@ type CreateFeedbackRequest struct {
 	// Image akan dihandle melalui form-data
 }
 
+type QRFeedback struct {
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	Station   string    `json:"station" gorm:"not null"`
+	QRCode    string    `json:"qr_code" gorm:"not null"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type CreateQRFeedbackRequest struct {
+	Station string `json:"station" form:"station" binding:"required"`
+}
+
+type RespondQRFeedbackRequest struct {
+	Response string `json:"response" binding:"required"`
+}
+
+// QRFeedbackResponse is the response model for QR feedback operations
+type QRFeedbackResponse struct {
+	ID        uint      `json:"id"`
+	QRCode    string    `json:"qr_code"`
+	Station   string    `json:"station"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// In your entity package
+type QRFeedbackListResponse struct {
+	QRFeedbacks []QRFeedbackResponse `json:"qr_feedbacks"`
+	Total       int64                `json:"total"`
+	Page        int                  `json:"page"`
+	Limit       int                  `json:"limit"`
+}
+
 // RespondFeedbackRequest adalah model untuk permintaan respons feedback
 type RespondFeedbackRequest struct {
 	Response string `json:"response" binding:"required"`

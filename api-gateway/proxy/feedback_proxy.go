@@ -136,6 +136,12 @@ func (p *FeedbackProxy) proxyMultipartRequest(c *gin.Context, path string) {
 	// Set content type
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
+	// Tambahkan bagian ini untuk meneruskan x-api-key ke service backend
+	apiKey := c.GetHeader("x-api-key")
+	if apiKey != "" {
+		req.Header.Set("x-api-key", apiKey)
+	}
+
 	// Salin header authorization
 	auth := c.GetHeader("Authorization")
 	if auth != "" {
@@ -198,6 +204,13 @@ func (p *FeedbackProxy) proxyRequest(c *gin.Context, path string, transformReque
 			req.Header.Add(key, value)
 		}
 	}
+
+	// Tambahkan bagian ini untuk meneruskan x-api-key ke service backend
+	apiKey := c.GetHeader("x-api-key")
+	if apiKey != "" {
+		req.Header.Set("x-api-key", apiKey)
+	}
+
 	// Set content type if it's not already set
 	if req.Header.Get("Content-Type") == "" {
 		req.Header.Set("Content-Type", "application/json")
@@ -267,6 +280,12 @@ func (p *FeedbackProxy) GenerateQRCodeImage(c *gin.Context) {
 		for _, value := range values {
 			req.Header.Add(key, value)
 		}
+	}
+
+	// Tambahkan bagian ini untuk meneruskan x-api-key ke service backend
+	apiKey := c.GetHeader("x-api-key")
+	if apiKey != "" {
+		req.Header.Set("x-api-key", apiKey)
 	}
 
 	// Make request

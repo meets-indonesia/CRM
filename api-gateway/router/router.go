@@ -23,6 +23,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 	r.Use(middleware.Logger())
 	r.Use(middleware.CORS())
 	r.Use(middleware.RateLimit(cfg.RateLimit.RequestsPerSecond))
+	r.Use(middleware.APIKeyAuth())
 
 	// Initialize proxies
 	authProxy := proxy.NewAuthProxy(cfg.Services.AuthURL)

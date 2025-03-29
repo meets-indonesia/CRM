@@ -234,3 +234,62 @@ func getQueryString(c *gin.Context) string {
 	}
 	return ""
 }
+
+// CreateQRFeedback handles QR feedback creation requests
+func (p *FeedbackProxy) CreateQRFeedback(c *gin.Context) {
+	p.proxyRequest(c, "/qr-feedbacks", nil)
+}
+
+// GetQRFeedback handles get QR feedback by ID requests
+func (p *FeedbackProxy) GetQRFeedback(c *gin.Context) {
+	p.proxyRequest(c, "/qr-feedbacks/"+c.Param("id"), nil)
+}
+
+// ListQRFeedbacks handles list all QR feedbacks requests
+func (p *FeedbackProxy) ListQRFeedbacks(c *gin.Context) {
+	path := "/qr-feedbacks" + getQueryString(c)
+	p.proxyRequest(c, path, nil)
+}
+
+// GenerateQRCodeImage handles QR code image generation requests
+func (p *FeedbackProxy) GenerateQRCodeImage(c *gin.Context) {
+	path := "/qr-feedbacks/" + c.Param("id") + "/download"
+
+	// Create request
+	req, err := http.NewRequest("GET", p.baseURL+path, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request"})
+		return
+	}
+
+	// Copy headers
+	for key, values := range c.Request.Header {
+		for _, value := range values {
+			req.Header.Add(key, value)
+		}
+	}
+
+	// Make request
+	resp, err := p.client.Do(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch QR code"})
+		return
+	}
+	defer resp.Body.Close()
+
+	// Copy headers and status
+	for key, values := range resp.Header {
+		for _, value := range values {
+			c.Header(key, value)
+		}
+	}
+	c.Status(resp.StatusCode)
+
+	// Stream the image data directly
+	io.Copy(c.Writer, resp.Body)
+}
+
+// VerifyQRCode handles QR code verification requests
+func (p *FeedbackProxy) VerifyQRCode(c *gin.Context) {
+	p.proxyRequest(c, "/qr-feedbacks/verify/"+c.Param("code"), nil)
+}

@@ -116,6 +116,9 @@ func Setup(cfg *config.Config) *gin.Engine {
 	r.GET("/rewards", rewardProxy.ListRewards)
 	r.GET("/rewards/:id", rewardProxy.GetReward)
 
+	// Qr Scan
+	r.GET("/qr/verify/:code", feedbackProxy.VerifyQRCode)
+
 	// Routes that require authentication
 	authorized := r.Group("/")
 	authorized.Use(middleware.JWTAuth(cfg.JWT))
@@ -170,6 +173,12 @@ func Setup(cfg *config.Config) *gin.Engine {
 		admin.POST("/notifications/push", notificationProxy.SendPushNotification)
 		admin.POST("/notifications/process", notificationProxy.ProcessPendingNotifications)
 		admin.GET("/notifications/user/:user_id", notificationProxy.ListUserNotifications)
+
+		// QR Feedback Management
+		admin.POST("/qr-feedbacks", feedbackProxy.CreateQRFeedback)
+		admin.GET("/qr-feedbacks", feedbackProxy.ListQRFeedbacks)
+		admin.GET("/qr-feedbacks/:id", feedbackProxy.GetQRFeedback)
+		admin.GET("/qr-feedbacks/:id/download", feedbackProxy.GenerateQRCodeImage)
 
 		// Tambahkan rute admin lainnya...
 	}

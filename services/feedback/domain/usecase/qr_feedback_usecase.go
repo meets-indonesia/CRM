@@ -121,6 +121,7 @@ func (u *qrFeedbackUsecase) ListQRFeedback(ctx context.Context, page, limit int)
 		responses[i] = entity.QRFeedbackResponse{
 			ID:        qrFeedback.ID,
 			QRCode:    qrFeedback.QRCode,
+			Station:   qrFeedback.Station,
 			CreatedAt: qrFeedback.CreatedAt,
 		}
 	}

@@ -97,7 +97,7 @@ func (u *feedbackUsecase) CreateFeedback(ctx context.Context, userID uint, req e
 			"Title: %s\n"+
 			"Content: %s\n"+
 			"Rating: %d/5\n\n"+
-			"Please check the admin panel for more details.",
+			"Please checks the admin panel for more details.",
 		feedback.Category, feedback.Station, feedback.Title, feedback.Content, feedback.Rating)
 
 	go u.emailService.SendNotification(subject, body)

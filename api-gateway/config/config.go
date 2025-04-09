@@ -52,7 +52,7 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("server.mode", "debug")
 	viper.SetDefault("services.auth_url", "http://auth:8081")
 	viper.SetDefault("services.user_url", "http://user:8082")
-	viper.SetDefault("services.feedback_url", "http://feedback:8083")
+	viper.SetDefault("services.feedback_url", "http://localhost:8083")
 	viper.SetDefault("services.reward_url", "http://reward:8084")
 	viper.SetDefault("services.inventory_url", "http://inventory:8085")
 	viper.SetDefault("services.article_url", "http://article:8086")

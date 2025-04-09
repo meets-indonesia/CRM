@@ -6,22 +6,16 @@ set -u
 function create_user_and_database() {
     local database=$1
     echo "  Creating database '$database'"
-    for i in {1..10}; do
-        if psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" -c "CREATE DATABASE $database"; then
-            psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" -c "GRANT ALL PRIVILEGES ON DATABASE $database TO $POSTGRES_USER"
-            return 0
-        fi
-        echo "  Attempt $i failed, retrying..."
-        sleep 2
-    done
-    echo "  Failed to create database '$database' after 10 attempts"
-    exit 1
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+        CREATE DATABASE $database;
+        GRANT ALL PRIVILEGES ON DATABASE $database TO $POSTGRES_USER;
+EOSQL
 }
 
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL to become available..."
 for i in {1..30}; do
-    if pg_isready -U "$POSTGRES_USER" -h localhost; then
+    if psql -U "$POSTGRES_USER" -c '\q' 2>/dev/null; then
         break
     fi
     sleep 1

@@ -233,10 +233,10 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d auth_db"]  # Perubahan: spesifik database
-      interval: 60s  # Diperpanjang intervalnya
-      timeout: 60s   # Diperpanjang timeout
-      retries: 60    # Ditambah retries
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     networks:
       - lrt-network
     restart: unless-stopped  # Tambahkan restart policy

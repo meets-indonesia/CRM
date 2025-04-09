@@ -22,38 +22,42 @@ func NewNotificationProxy(baseURL string) *NotificationProxy {
 	}
 }
 
-// SendEmail handles send email requests
+// SendEmail handles sending email notifications
 func (p *NotificationProxy) SendEmail(c *gin.Context) {
 	p.proxyRequest(c, "/notifications/email", nil)
 }
 
-// SendPushNotification handles send push notification requests
+// SendPushNotification handles sending push notifications
 func (p *NotificationProxy) SendPushNotification(c *gin.Context) {
 	p.proxyRequest(c, "/notifications/push", nil)
 }
 
-// GetNotification handles get notification by ID requests
-func (p *NotificationProxy) GetNotification(c *gin.Context) {
-	p.proxyRequest(c, "/notifications/"+c.Param("id"), nil)
-}
-
-// ListUserNotifications handles list user notifications requests
-func (p *NotificationProxy) ListUserNotifications(c *gin.Context) {
-	if c.Param("user_id") != "" {
-		p.proxyRequest(c, "/notifications/user/"+c.Param("user_id"), nil)
-	} else {
-		p.proxyRequest(c, "/notifications", nil)
-	}
-}
-
-// ProcessPendingNotifications handles process pending notifications requests
+// ProcessPendingNotifications handles processing pending notifications
 func (p *NotificationProxy) ProcessPendingNotifications(c *gin.Context) {
 	p.proxyRequest(c, "/notifications/process", nil)
+}
+
+// ListUserNotifications handles listing notifications for a user
+func (p *NotificationProxy) ListUserNotifications(c *gin.Context) {
+	path := "/notifications/user"
+
+	// Check if user_id parameter is provided in URL
+	if userId := c.Param("user_id"); userId != "" {
+		path += "/" + userId
+	}
+
+	p.proxyRequest(c, path, nil)
+}
+
+// GetNotification handles getting a notification by ID
+func (p *NotificationProxy) GetNotification(c *gin.Context) {
+	p.proxyRequest(c, "/notifications/"+c.Param("id"), nil)
 }
 
 // proxyRequest proxies a request to the Notification service
 func (p *NotificationProxy) proxyRequest(c *gin.Context, path string, transformRequestBody func([]byte) ([]byte, error)) {
 	targetURL := p.baseURL + path
+
 	// Read the request body
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -84,11 +88,8 @@ func (p *NotificationProxy) proxyRequest(c *gin.Context, path string, transformR
 		}
 	}
 
-	// Tambahkan bagian ini untuk meneruskan x-api-key ke service backend
-	apiKey := c.GetHeader("x-api-key")
-	if apiKey != "" {
-		req.Header.Set("x-api-key", apiKey)
-	}
+	// Add auth headers using the shared function
+	AddAuthHeaders(req)
 
 	// Set content type if it's not already set
 	if req.Header.Get("Content-Type") == "" {

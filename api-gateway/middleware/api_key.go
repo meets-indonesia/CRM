@@ -1,19 +1,26 @@
 package middleware
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 const (
-	APIKeyHeader = "x-api-key"
-	ValidAPIKey  = "CRMSUMSEL2025@MEETSIDN"
+	AuthTimestampHeader = "X-Auth-Timestamp"
+	AuthSignatureHeader = "X-Auth-Signature"
+	SecretKey           = "CRMSUMSEL2025@MEETSIDN" // Your secret key
+	TimeWindow          = 5                        // 1 minutes in seconds
 )
 
 func APIKeyAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Skip middleware untuk health check dan auth routes
+		// Skip middleware for health check and auth routes
 		if c.Request.URL.Path == "/health" ||
 			c.Request.URL.Path == "/qr/verify/:code" ||
 			c.Request.URL.Path == "/validate" ||
@@ -23,21 +30,51 @@ func APIKeyAuth() gin.HandlerFunc {
 			return
 		}
 
-		apiKey := c.GetHeader(APIKeyHeader)
-		if apiKey == "" {
+		// Get headers
+		timestampStr := c.GetHeader(AuthTimestampHeader)
+		signature := c.GetHeader(AuthSignatureHeader)
+
+		// Validate headers presence
+		if timestampStr == "" || signature == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "x-api-key header is required",
+				"error": "X-Auth-Timestamp and X-Auth-Signature headers are required",
 			})
 			return
 		}
 
-		if apiKey != ValidAPIKey {
+		// Validate timestamp
+		timestamp, err := strconv.ParseInt(timestampStr, 10, 64)
+		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "invalid api key",
+				"error": "invalid timestamp format",
+			})
+			return
+		}
+
+		// Check if timestamp is within allowed window
+		currentTime := time.Now().Unix()
+		if timestamp < currentTime-TimeWindow || timestamp > currentTime+TimeWindow {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "timestamp is too old or too new",
+			})
+			return
+		}
+
+		// Verify signature
+		expectedSignature := generateSignature(timestampStr, SecretKey)
+		if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "invalid signature",
 			})
 			return
 		}
 
 		c.Next()
 	}
+}
+
+func generateSignature(timestamp, secret string) string {
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte(timestamp))
+	return hex.EncodeToString(h.Sum(nil))
 }

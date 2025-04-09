@@ -151,11 +151,8 @@ func (p *InventoryProxy) proxyRequest(c *gin.Context, path string, transformRequ
 		}
 	}
 
-	// Tambahkan bagian ini untuk meneruskan x-api-key ke service backend
-	apiKey := c.GetHeader("x-api-key")
-	if apiKey != "" {
-		req.Header.Set("x-api-key", apiKey)
-	}
+	// Add auth headers using the shared function
+	AddAuthHeaders(req)
 
 	// Set content type if it's not already set
 	if req.Header.Get("Content-Type") == "" {

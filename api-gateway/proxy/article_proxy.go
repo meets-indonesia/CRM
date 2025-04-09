@@ -39,11 +39,8 @@ func (p *ArticleProxy) CreateArticle(c *gin.Context) {
 	// Salin semua header dari request original
 	req.Header = c.Request.Header
 
-	// Tambahkan bagian ini untuk meneruskan x-api-key ke service backend
-	apiKey := c.GetHeader("x-api-key")
-	if apiKey != "" {
-		req.Header.Set("x-api-key", apiKey)
-	}
+	// Tambahkan auth headers
+	AddAuthHeaders(req)
 
 	// Kirim request ke service article
 	resp, err := p.client.Do(req)
@@ -128,11 +125,8 @@ func (p *ArticleProxy) proxyRequest(c *gin.Context, path string, transformReques
 		}
 	}
 
-	// Tambahkan bagian ini untuk meneruskan x-api-key ke service backend
-	apiKey := c.GetHeader("x-api-key")
-	if apiKey != "" {
-		req.Header.Set("x-api-key", apiKey)
-	}
+	// Add auth headers
+	AddAuthHeaders(req)
 
 	// Set content type if it's not already set
 	if req.Header.Get("Content-Type") == "" {
@@ -187,11 +181,8 @@ func (p *ArticleProxy) AccessUploadImages(c *gin.Context) {
 		}
 	}
 
-	// Tambahkan bagian ini untuk meneruskan x-api-key ke service backend
-	apiKey := c.GetHeader("x-api-key")
-	if apiKey != "" {
-		req.Header.Set("x-api-key", apiKey)
-	}
+	// Add auth headers
+	AddAuthHeaders(req)
 
 	resp, err := p.client.Do(req)
 	if err != nil {

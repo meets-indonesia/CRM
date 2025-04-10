@@ -221,25 +221,25 @@ services:
       - lrt-network
 
   # Single Postgres Database
-  postgres:
-    image: postgres:alpine
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=lrt-sumsel-2025-xdgtt
-      - POSTGRES_PASSWORD=xdgtt2024meets@ID
-      - POSTGRES_MULTIPLE_DATABASES=auth_db,user_db,feedback_db,reward_db,inventory_db,article_db,notification_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    networks:
-      - lrt-network
-    restart: unless-stopped  # Tambahkan restart policy
+postgres:
+  image: postgres:alpine
+  ports:
+    - "5432:5432"
+  environment:
+    - POSTGRES_USER=lrt-sumsel-2025-xdgtt
+    - POSTGRES_PASSWORD=xdgtt2024meets@ID
+    - POSTGRES_MULTIPLE_DATABASES=auth_db,user_db,feedback_db,reward_db,inventory_db,article_db,notification_db
+  volumes:
+    - postgres_data:/var/lib/postgresql/data
+    - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U lrt-sumsel-2025-xdgtt"]
+    interval: 5s
+    timeout: 5s
+    retries: 10
+  networks:
+    - lrt-network
+  restart: unless-stopped
 
   # Message Broker
   rabbitmq:

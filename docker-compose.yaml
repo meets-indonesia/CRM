@@ -37,8 +37,8 @@ services:
       - PORT=8081
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_USER=lrt-sumsel-2025-xdgtt
+      - DB_PASSWORD=xdgtt2024meets@ID
       - DB_NAME=auth_db
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
@@ -72,8 +72,8 @@ services:
       - PORT=8082
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_USER=lrt-sumsel-2025-xdgtt
+      - DB_PASSWORD=xdgtt2024meets@ID
       - DB_NAME=user_db
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
@@ -96,8 +96,8 @@ services:
       - PORT=8083
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_USER=lrt-sumsel-2025-xdgtt
+      - DB_PASSWORD=xdgtt2024meets@ID
       - DB_NAME=feedback_db
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
@@ -121,8 +121,8 @@ services:
       - PORT=8084
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_USER=lrt-sumsel-2025-xdgtt
+      - DB_PASSWORD=xdgtt2024meets@ID
       - DB_NAME=reward_db
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
@@ -147,8 +147,8 @@ services:
       - PORT=8085
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_USER=lrt-sumsel-2025-xdgtt
+      - DB_PASSWORD=xdgtt2024meets@ID
       - DB_NAME=inventory_db
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
@@ -172,8 +172,8 @@ services:
       - PORT=8086
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_USER=lrt-sumsel-2025-xdgtt
+      - DB_PASSWORD=xdgtt2024meets@ID
       - DB_NAME=article_db
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
@@ -197,8 +197,8 @@ services:
       - PORT=8087
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_USER=lrt-sumsel-2025-xdgtt
+      - DB_PASSWORD=xdgtt2024meets@ID
       - DB_NAME=notification_db
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
@@ -226,8 +226,8 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=lrt-sumsel-2025-xdgtt
+      - POSTGRES_PASSWORD=xdgtt2024meets@ID
       - POSTGRES_MULTIPLE_DATABASES=auth_db,user_db,feedback_db,reward_db,inventory_db,article_db,notification_db
     volumes:
       - postgres_data:/var/lib/postgresql/data

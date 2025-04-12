@@ -181,9 +181,6 @@ func (p *ArticleProxy) AccessUploadImages(c *gin.Context) {
 		}
 	}
 
-	// Add auth headers
-	AddAuthHeaders(req)
-
 	resp, err := p.client.Do(req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to fetch image from article service"})

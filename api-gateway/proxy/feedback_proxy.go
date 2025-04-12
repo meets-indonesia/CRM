@@ -54,9 +54,39 @@ func (p *FeedbackProxy) ListPendingFeedback(c *gin.Context) {
 	p.proxyRequest(c, "/feedbacks/pending"+getQueryString(c), nil)
 }
 
-// AccesUploadImages handles accessing uploaded images
-func (p *FeedbackProxy) AccesUploadImages(c *gin.Context) {
-	p.proxyRequest(c, "/feedbacks/uploads/"+c.Query("filename"), nil)
+// AccessUploadImages handles accessing uploaded images (tanpa auth headers)
+func (p *FeedbackProxy) AccessUploadImages(c *gin.Context) {
+	filepath := c.Param("filepath")
+	targetURL := p.baseURL + "/uploads" + filepath
+
+	// Buat request tanpa menambahkan auth headers
+	req, err := http.NewRequest("GET", targetURL, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request"})
+		return
+	}
+
+	// Copy query parameters
+	req.URL.RawQuery = c.Request.URL.RawQuery
+
+	// Kirim request
+	resp, err := p.client.Do(req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to fetch image from feedback service"})
+		return
+	}
+	defer resp.Body.Close()
+
+	// Copy headers dari response
+	for key, values := range resp.Header {
+		for _, value := range values {
+			c.Header(key, value)
+		}
+	}
+
+	// Stream response
+	c.Status(resp.StatusCode)
+	io.Copy(c.Writer, resp.Body)
 }
 
 // ListUserFeedback handles list user feedback requests

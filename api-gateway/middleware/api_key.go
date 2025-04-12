@@ -30,7 +30,10 @@ func APIKeyAuth() gin.HandlerFunc {
 			c.Request.URL.Path == "/qr/verify/:code" ||
 			c.Request.URL.Path == "/validate" ||
 			c.Request.URL.Path == "/auth/admin/login" ||
-			c.Request.URL.Path == "/auth/customer/login" {
+			c.Request.URL.Path == "/auth/customer/login" ||
+			c.Request.URL.Path == "/article/uploads/*filepath" ||
+			c.Request.URL.Path == "/feedbacks/uploads/*filepath" ||
+			c.Request.URL.Path == "/uploads/*filepath" {
 			c.Next()
 			return
 		}

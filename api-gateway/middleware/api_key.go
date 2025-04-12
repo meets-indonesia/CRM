@@ -19,7 +19,7 @@ const (
 )
 
 const (
-	APIKeyHeader = "X-API-Key"
+	APIKeyHeader = "x-api-key"
 	StaticAPIKey = "CRMSUMSEL2025@MEETSIDN" // Ganti dengan API key yang diinginkan
 )
 

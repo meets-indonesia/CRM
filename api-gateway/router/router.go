@@ -95,13 +95,21 @@ func Setup(cfg *config.Config) *gin.Engine {
 
 	// Auth routes
 	auth := r.Group("/auth")
+	auth.Use(middleware.SimpleAPIKeyAuth())
 	{
-		auth.Use(middleware.SimpleAPIKeyAuth()).POST("/admin/login", authProxy.AdminLogin)
-		auth.Use(middleware.SimpleAPIKeyAuth()).POST("/admin/register", authProxy.AdminRegister)
-		auth.Use(middleware.SimpleAPIKeyAuth()).POST("/admin/reset-password", authProxy.AdminResetPassword)
-		auth.Use(middleware.SimpleAPIKeyAuth()).POST("/admin/verify-otp", authProxy.AdminVerifyOTP)
-		auth.Use(middleware.APIKeyAuth()).POST("/customer/login", authProxy.CustomerLogin)
-		auth.Use(middleware.APIKeyAuth()).POST("/customer/google", authProxy.CustomerGoogleLogin)
+		auth.POST("/admin/login", authProxy.AdminLogin)
+		auth.POST("/admin/register", authProxy.AdminRegister)
+		auth.POST("/admin/reset-password", authProxy.AdminResetPassword)
+		auth.POST("/admin/verify-otp", authProxy.AdminVerifyOTP)
+		auth.POST("/customer/login", authProxy.CustomerLogin)
+		auth.POST("/customer/google", authProxy.CustomerGoogleLogin)
+	}
+
+	authmobile := r.Group("/auth")
+	authmobile.Use(middleware.APIKeyAuth())
+	{
+		authmobile.POST("/customer/login", authProxy.CustomerLogin)
+		authmobile.POST("/customer/google", authProxy.CustomerGoogleLogin)
 	}
 
 	// validate user token

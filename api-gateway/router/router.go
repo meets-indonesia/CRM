@@ -41,9 +41,9 @@ func Setup(cfg *config.Config) *gin.Engine {
 	})
 
 	// Serve static files from Article service
-	r.Use(middleware.APIKeyAuth()).GET("/article/uploads/*filepath", articleProxy.AccessUploadImages)
+	r.GET("/article/uploads/*filepath", articleProxy.AccessUploadImages)
 
-	r.Use(middleware.APIKeyAuth()).GET("/feedbacks/uploads/*filepath", func(c *gin.Context) {
+	r.GET("/feedbacks/uploads/*filepath", func(c *gin.Context) {
 		// Ambil hanya path file
 		filepath := c.Param("filepath") // contoh: /17429xxx.png
 
@@ -70,7 +70,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 	})
 
 	// Serve reward uploads directly from reward service
-	r.Use(middleware.APIKeyAuth()).GET("/uploads/*filepath", func(c *gin.Context) {
+	r.GET("/uploads/*filepath", func(c *gin.Context) {
 		filepath := c.Param("filepath")
 		targetURL := cfg.Services.RewardURL + "/uploads" + filepath
 
@@ -113,19 +113,19 @@ func Setup(cfg *config.Config) *gin.Engine {
 	}
 
 	// validate user token
-	r.Use(middleware.SimpleAPIKeyAuth()).GET("/validate", authProxy.ValidateToken)
+	r.GET("/validate", authProxy.ValidateToken)
 
 	// Articles public routes
-	r.Use(middleware.APIKeyAuth()).GET("/articles", articleProxy.ListArticles)
-	r.Use(middleware.APIKeyAuth()).GET("/articles/:id", articleProxy.ViewArticle)
-	r.Use(middleware.APIKeyAuth()).GET("/articles/search", articleProxy.SearchArticles)
+	r.GET("/articles", articleProxy.ListArticles)
+	r.GET("/articles/:id", articleProxy.ViewArticle)
+	r.GET("/articles/search", articleProxy.SearchArticles)
 
 	// Public rewards routes
-	r.Use(middleware.APIKeyAuth()).GET("/rewards", rewardProxy.ListRewards)
-	r.Use(middleware.APIKeyAuth()).GET("/rewards/:id", rewardProxy.GetReward)
+	r.GET("/rewards", rewardProxy.ListRewards)
+	r.GET("/rewards/:id", rewardProxy.GetReward)
 
 	// Qr Scan
-	r.Use(middleware.APIKeyAuth()).GET("/qr/verify/:code", feedbackProxy.VerifyQRCode)
+	r.GET("/qr/verify/:code", feedbackProxy.VerifyQRCode)
 
 	// Routes that require authentication
 	authorized := r.Group("/")

@@ -36,27 +36,27 @@ func (p *FeedbackProxy) CreateFeedback(c *gin.Context) {
 
 // GetFeedback handles get feedback by ID requests
 func (p *FeedbackProxy) GetFeedback(c *gin.Context) {
-	p.proxyRequest(c, "/feedbacks/"+c.Param("id"), nil)
+	p.proxyRequestWithoutHMAC(c, "/feedbacks/"+c.Param("id"), nil)
 }
 
 // RespondToFeedback handles respond to feedback requests
 func (p *FeedbackProxy) RespondToFeedback(c *gin.Context) {
-	p.proxyRequest(c, "/feedbacks/"+c.Param("id")+"/respond", nil)
+	p.proxyRequestWithoutHMAC(c, "/feedbacks/"+c.Param("id")+"/respond", nil)
 }
 
 // ListAllFeedback handles list all feedback requests
 func (p *FeedbackProxy) ListAllFeedback(c *gin.Context) {
-	p.proxyRequest(c, "/feedbacks"+getQueryString(c), nil)
+	p.proxyRequestWithoutHMAC(c, "/feedbacks"+getQueryString(c), nil)
 }
 
 // ListPendingFeedback handles list pending feedback requests
 func (p *FeedbackProxy) ListPendingFeedback(c *gin.Context) {
-	p.proxyRequest(c, "/feedbacks/pending"+getQueryString(c), nil)
+	p.proxyRequestWithoutHMAC(c, "/feedbacks/pending"+getQueryString(c), nil)
 }
 
 // AccesUploadImages handles accessing uploaded images
 func (p *FeedbackProxy) AccesUploadImages(c *gin.Context) {
-	p.proxyRequest(c, "/feedbacks/uploads/"+c.Query("filename"), nil)
+	p.proxyRequestWithoutHMAC(c, "/feedbacks/uploads/"+c.Query("filename"), nil)
 }
 
 // ListUserFeedback handles list user feedback requests
@@ -65,28 +65,28 @@ func (p *FeedbackProxy) ListUserFeedback(c *gin.Context) {
 	if userId := c.Param("user_id"); userId != "" {
 		path += "/" + userId
 	}
-	p.proxyRequest(c, path+getQueryString(c), nil)
+	p.proxyRequestWithoutHMAC(c, path+getQueryString(c), nil)
 }
 
 // CreateQRFeedback handles QR feedback creation requests
 func (p *FeedbackProxy) CreateQRFeedback(c *gin.Context) {
-	p.proxyRequest(c, "/qr-feedbacks", nil)
+	p.proxyRequestWithoutHMAC(c, "/qr-feedbacks", nil)
 }
 
 // GetQRFeedback handles get QR feedback by ID requests
 func (p *FeedbackProxy) GetQRFeedback(c *gin.Context) {
-	p.proxyRequest(c, "/qr-feedbacks/"+c.Param("id"), nil)
+	p.proxyRequestWithoutHMAC(c, "/qr-feedbacks/"+c.Param("id"), nil)
 }
 
 // ListQRFeedbacks handles list all QR feedbacks requests
 func (p *FeedbackProxy) ListQRFeedbacks(c *gin.Context) {
-	p.proxyRequest(c, "/qr-feedbacks"+getQueryString(c), nil)
+	p.proxyRequestWithoutHMAC(c, "/qr-feedbacks"+getQueryString(c), nil)
 }
 
 // GenerateQRCodeImage handles QR code image generation requests
 func (p *FeedbackProxy) GenerateQRCodeImage(c *gin.Context) {
 	path := "/qr-feedbacks/" + c.Param("id") + "/download"
-	p.proxyRequest(c, path, nil)
+	p.proxyRequestWithoutHMAC(c, path, nil)
 }
 
 // VerifyQRCode handles QR code verification requests
@@ -132,6 +132,81 @@ func (p *FeedbackProxy) proxyRequest(c *gin.Context, path string, transformReque
 
 	// Add auth headers using the shared function
 	AddAuthHeaders(req)
+
+	// Set content type if it's not already set
+	if req.Header.Get("Content-Type") == "" {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	// Add query parameters
+	req.URL.RawQuery = c.Request.URL.RawQuery
+
+	// Send the request to the target service
+	resp, err := p.client.Do(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send request to feedback service"})
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response from feedback service"})
+		return
+	}
+
+	// Copy headers from the target service response
+	for key, values := range resp.Header {
+		for _, value := range values {
+			c.Header(key, value)
+		}
+	}
+
+	// Set the status code and write the response body
+	c.Status(resp.StatusCode)
+	c.Writer.Write(respBody)
+}
+
+// proxyRequest proxies a request to the Feedback service
+func (p *FeedbackProxy) proxyRequestWithoutHMAC(c *gin.Context, path string, transformRequestBody func([]byte) ([]byte, error)) {
+	targetURL := p.baseURL + path
+
+	// Read the request body
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read request body"})
+		return
+	}
+
+	// Transform the request body if needed
+	if transformRequestBody != nil {
+		body, err = transformRequestBody(body)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to transform request body"})
+			return
+		}
+	}
+
+	// Create a new request to the target service
+	req, err := http.NewRequest(c.Request.Method, targetURL, bytes.NewReader(body))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create proxy request"})
+		return
+	}
+
+	// Copy headers from the original request
+	for key, values := range c.Request.Header {
+		for _, value := range values {
+			req.Header.Add(key, value)
+		}
+	}
+
+	// Add auth headers using the shared function
+	apiKey := c.GetHeader("x-api-key")
+	if apiKey != "" {
+		req.Header.Set("x-api-key", apiKey)
+	}
 
 	// Set content type if it's not already set
 	if req.Header.Get("Content-Type") == "" {

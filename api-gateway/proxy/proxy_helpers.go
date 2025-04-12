@@ -30,3 +30,7 @@ func GenerateSignature(timestamp, secret string) string {
 	h.Write([]byte(timestamp))
 	return hex.EncodeToString(h.Sum(nil))
 }
+
+func AddSimpleAuthHeaders(req *http.Request, apiKey string) {
+	req.Header.Add("X-API-Key", apiKey)
+}

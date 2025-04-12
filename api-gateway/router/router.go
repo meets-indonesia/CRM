@@ -23,7 +23,6 @@ func Setup(cfg *config.Config) *gin.Engine {
 	r.Use(middleware.Logger())
 	r.Use(middleware.CORS())
 	r.Use(middleware.RateLimit(cfg.RateLimit.RequestsPerSecond))
-	r.Use(middleware.APIKeyAuth())
 
 	// Initialize proxies
 	authProxy := proxy.NewAuthProxy(cfg.Services.AuthURL)
@@ -42,9 +41,9 @@ func Setup(cfg *config.Config) *gin.Engine {
 	})
 
 	// Serve static files from Article service
-	r.GET("/article/uploads/*filepath", articleProxy.AccessUploadImages)
+	r.Use(middleware.APIKeyAuth()).GET("/article/uploads/*filepath", articleProxy.AccessUploadImages)
 
-	r.GET("/feedbacks/uploads/*filepath", func(c *gin.Context) {
+	r.Use(middleware.APIKeyAuth()).GET("/feedbacks/uploads/*filepath", func(c *gin.Context) {
 		// Ambil hanya path file
 		filepath := c.Param("filepath") // contoh: /17429xxx.png
 
@@ -71,7 +70,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 	})
 
 	// Serve reward uploads directly from reward service
-	r.GET("/uploads/*filepath", func(c *gin.Context) {
+	r.Use(middleware.APIKeyAuth()).GET("/uploads/*filepath", func(c *gin.Context) {
 		filepath := c.Param("filepath")
 		targetURL := cfg.Services.RewardURL + "/uploads" + filepath
 
@@ -97,28 +96,28 @@ func Setup(cfg *config.Config) *gin.Engine {
 	// Auth routes
 	auth := r.Group("/auth")
 	{
-		auth.POST("/admin/login", authProxy.AdminLogin)
-		auth.POST("/admin/register", authProxy.AdminRegister)
-		auth.POST("/admin/reset-password", authProxy.AdminResetPassword)
-		auth.POST("/admin/verify-otp", authProxy.AdminVerifyOTP)
-		auth.POST("/customer/login", authProxy.CustomerLogin)
-		auth.POST("/customer/google", authProxy.CustomerGoogleLogin)
+		auth.Use(middleware.SimpleAPIKeyAuth()).POST("/admin/login", authProxy.AdminLogin)
+		auth.Use(middleware.SimpleAPIKeyAuth()).POST("/admin/register", authProxy.AdminRegister)
+		auth.Use(middleware.SimpleAPIKeyAuth()).POST("/admin/reset-password", authProxy.AdminResetPassword)
+		auth.Use(middleware.SimpleAPIKeyAuth()).POST("/admin/verify-otp", authProxy.AdminVerifyOTP)
+		auth.Use(middleware.APIKeyAuth()).POST("/customer/login", authProxy.CustomerLogin)
+		auth.Use(middleware.APIKeyAuth()).POST("/customer/google", authProxy.CustomerGoogleLogin)
 	}
 
 	// validate user token
-	r.GET("/validate", authProxy.ValidateToken)
+	r.Use(middleware.SimpleAPIKeyAuth()).GET("/validate", authProxy.ValidateToken)
 
 	// Articles public routes
-	r.GET("/articles", articleProxy.ListArticles)
-	r.GET("/articles/:id", articleProxy.ViewArticle)
-	r.GET("/articles/search", articleProxy.SearchArticles)
+	r.Use(middleware.APIKeyAuth()).GET("/articles", articleProxy.ListArticles)
+	r.Use(middleware.APIKeyAuth()).GET("/articles/:id", articleProxy.ViewArticle)
+	r.Use(middleware.APIKeyAuth()).GET("/articles/search", articleProxy.SearchArticles)
 
 	// Public rewards routes
-	r.GET("/rewards", rewardProxy.ListRewards)
-	r.GET("/rewards/:id", rewardProxy.GetReward)
+	r.Use(middleware.APIKeyAuth()).GET("/rewards", rewardProxy.ListRewards)
+	r.Use(middleware.APIKeyAuth()).GET("/rewards/:id", rewardProxy.GetReward)
 
 	// Qr Scan
-	r.GET("/qr/verify/:code", feedbackProxy.VerifyQRCode)
+	r.Use(middleware.APIKeyAuth()).GET("/qr/verify/:code", feedbackProxy.VerifyQRCode)
 
 	// Routes that require authentication
 	authorized := r.Group("/")
@@ -127,6 +126,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 	// Admin routes
 	admin := authorized.Group("/")
 	admin.Use(middleware.AdminOnly())
+	admin.Use(middleware.SimpleAPIKeyAuth())
 	{
 		// User management
 		admin.GET("/users/admin", userProxy.ListAdmins)
@@ -190,17 +190,17 @@ func Setup(cfg *config.Config) *gin.Engine {
 	{
 		// Profile
 		// customer.GET("/users/:id", userProxy.GetUser)  // hapus command jika ingin get user data hanya dilakukan oleh user
-		customer.PUT("/users/:id", userProxy.UpdateUser)
+		customer.Use(middleware.APIKeyAuth()).PUT("/users/:id", userProxy.UpdateUser)
 
 		// Feedback
-		customer.POST("/feedbacks", feedbackProxy.CreateFeedback)
+		customer.Use(middleware.APIKeyAuth()).POST("/feedbacks", feedbackProxy.CreateFeedback)
 
 		// Reward
-		customer.POST("/claims", rewardProxy.ClaimReward)
-		customer.GET("/claims/user", rewardProxy.ListUserClaims)
+		customer.Use(middleware.APIKeyAuth()).POST("/claims", rewardProxy.ClaimReward)
+		customer.Use(middleware.SimpleAPIKeyAuth()).GET("/claims/user", rewardProxy.ListUserClaims)
 
 		// Notifications
-		customer.GET("/notifications", notificationProxy.ListUserNotifications)
+		customer.Use(middleware.APIKeyAuth()).GET("/notifications", notificationProxy.ListUserNotifications)
 
 		// Tambahkan rute customer lainnya...
 	}

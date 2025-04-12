@@ -18,6 +18,11 @@ const (
 	TimeWindow          = 5                        // 1 minutes in seconds
 )
 
+const (
+	APIKeyHeader = "X-API-Key"
+	StaticAPIKey = "CRMSUMSEL2025@MEETSIDN" // Ganti dengan API key yang diinginkan
+)
+
 func APIKeyAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Skip middleware for health check and auth routes
@@ -77,4 +82,25 @@ func generateSignature(timestamp, secret string) string {
 	h := hmac.New(sha256.New, []byte(secret))
 	h.Write([]byte(timestamp))
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+func SimpleAPIKeyAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		apiKey := c.GetHeader(APIKeyHeader)
+		if apiKey == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "X-API-Key header is required",
+			})
+			return
+		}
+
+		if apiKey != StaticAPIKey {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "invalid API key",
+			})
+			return
+		}
+
+		c.Next()
+	}
 }

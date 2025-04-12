@@ -23,6 +23,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 	r.Use(middleware.Logger())
 	r.Use(middleware.CORS())
 	r.Use(middleware.RateLimit(cfg.RateLimit.RequestsPerSecond))
+	r.Use(middleware.APIKeyAuth())
 
 	// Initialize proxies
 	authProxy := proxy.NewAuthProxy(cfg.Services.AuthURL)
@@ -95,7 +96,6 @@ func Setup(cfg *config.Config) *gin.Engine {
 
 	// Auth routes
 	auth := r.Group("/auth")
-	auth.Use(middleware.SimpleAPIKeyAuth())
 	{
 		auth.POST("/admin/login", authProxy.AdminLogin)
 		auth.POST("/admin/register", authProxy.AdminRegister)
@@ -103,13 +103,6 @@ func Setup(cfg *config.Config) *gin.Engine {
 		auth.POST("/admin/verify-otp", authProxy.AdminVerifyOTP)
 		auth.POST("/customer/login", authProxy.CustomerLogin)
 		auth.POST("/customer/google", authProxy.CustomerGoogleLogin)
-	}
-
-	authmobile := r.Group("/auth")
-	authmobile.Use(middleware.SimpleAPIKeyAuth())
-	{
-		authmobile.POST("/customer/login", authProxy.CustomerLogin)
-		authmobile.POST("/customer/google", authProxy.CustomerGoogleLogin)
 	}
 
 	// validate user token
@@ -134,7 +127,6 @@ func Setup(cfg *config.Config) *gin.Engine {
 	// Admin routes
 	admin := authorized.Group("/")
 	admin.Use(middleware.AdminOnly())
-	admin.Use(middleware.SimpleAPIKeyAuth())
 	{
 		// User management
 		admin.GET("/users/admin", userProxy.ListAdmins)
@@ -198,17 +190,17 @@ func Setup(cfg *config.Config) *gin.Engine {
 	{
 		// Profile
 		// customer.GET("/users/:id", userProxy.GetUser)  // hapus command jika ingin get user data hanya dilakukan oleh user
-		customer.Use(middleware.APIKeyAuth()).PUT("/users/:id", userProxy.UpdateUser)
+		customer.PUT("/users/:id", userProxy.UpdateUser)
 
 		// Feedback
-		customer.Use(middleware.APIKeyAuth()).POST("/feedbacks", feedbackProxy.CreateFeedback)
+		customer.POST("/feedbacks", feedbackProxy.CreateFeedback)
 
 		// Reward
-		customer.Use(middleware.APIKeyAuth()).POST("/claims", rewardProxy.ClaimReward)
-		customer.Use(middleware.SimpleAPIKeyAuth()).GET("/claims/user", rewardProxy.ListUserClaims)
+		customer.POST("/claims", rewardProxy.ClaimReward)
+		customer.GET("/claims/user", rewardProxy.ListUserClaims)
 
 		// Notifications
-		customer.Use(middleware.APIKeyAuth()).GET("/notifications", notificationProxy.ListUserNotifications)
+		customer.GET("/notifications", notificationProxy.ListUserNotifications)
 
 		// Tambahkan rute customer lainnya...
 	}

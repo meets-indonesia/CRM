@@ -44,17 +44,17 @@ func (p *AuthProxy) AdminVerifyOTP(c *gin.Context) {
 
 // CustomerLogin handles customer login requests
 func (p *AuthProxy) CustomerLogin(c *gin.Context) {
-	p.proxyRequest(c, "/customer/login", nil)
+	p.proxyRequestWithoutHMAC(c, "/customer/login", nil)
 }
 
 // CustomerGoogleLogin handles customer login via Google OAuth
 func (p *AuthProxy) CustomerGoogleLogin(c *gin.Context) {
-	p.proxyRequest(c, "/customer/google", nil)
+	p.proxyRequestWithoutHMAC(c, "/customer/google", nil)
 }
 
 // ValidateToken handles token validation requests
 func (p *AuthProxy) ValidateToken(c *gin.Context) {
-	p.proxyRequest(c, "/validate", nil)
+	p.proxyRequestWithoutHMAC(c, "/validate", nil)
 }
 
 // proxyRequest proxies a request to the Auth service

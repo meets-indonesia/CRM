@@ -106,7 +106,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 	}
 
 	authmobile := r.Group("/auth")
-	authmobile.Use(middleware.APIKeyAuth())
+	authmobile.Use(middleware.SimpleAPIKeyAuth())
 	{
 		authmobile.POST("/customer/login", authProxy.CustomerLogin)
 		authmobile.POST("/customer/google", authProxy.CustomerGoogleLogin)

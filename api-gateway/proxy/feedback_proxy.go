@@ -250,7 +250,14 @@ func (p *FeedbackProxy) proxyMultipartRequest(c *gin.Context, path string) {
 		return
 	}
 
+	for key, values := range c.Request.Header {
+		for _, value := range values {
+			req.Header.Add(key, value)
+		}
+	}
+
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+
 	AddAuthHeaders(req)
 
 	resp, err := p.client.Do(req)
